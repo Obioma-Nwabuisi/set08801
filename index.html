@@ -3,14 +3,103 @@
 <head>
   <!-- Setting character encoding so text (including Unicode chess pieces) displays correctly-->
   <meta charset="UTF-8" />
+  <!--Ensuring that the layout scales properly on phones and tablets (responsive design)-->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--Adding web page title-->
+  <!--Adding the browser tab title-->
   <title>Chess Game</title>
   <!--Attaching the external CSS file-->
   <link rel="stylesheet" href="styles.css" />
 </head>
+<!-- Now the web page body design begins-->
+<body>
 
-<body >
- <h1 > Hello Web Tech </h1 >
-</body >
+  <div class="app">
+  <!-- LOGIN / USER AREA -->
+  <section class="login-panel" id="loginPanel">
+    <h2>Sign in</h2>
+    <form id="loginForm">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required />
+      </div>
+      <div class="field">
+        <label for="role">Role</label>
+        <select id="role" name="role">
+          <option value="child">Child</option>
+          <option value="parent">Parent</option>
+        </select>
+      </div>
+      <button type="submit">Login</button>
+      <p class="login-note">
+        Demo passwords: parent = <strong>parent123</strong>, child = anything.
+      </p>
+      <p class="login-error" id="loginError"></p>
+    </form>
+  </section>
+
+  <!-- TOP BAR (only visible when logged in and allowed) -->
+  <div class="app-inner" id="appInner">
+    <header class="top-bar">
+      <h1>Online Chess</h1>
+      <div class="controls">
+        <span class="user-label" id="currentUserLabel"></span>
+        <button id="newGameBtn">New Game</button>
+        <button id="flipBoardBtn">Flip Board</button>
+        <button id="logoutBtn">Logout</button>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <section class="side-panel" id="whitePanel">
+        <h2>White</h2>
+        <div class="player-info" id="whiteInfo">
+          <span class="label">Player:</span>
+          <span id="whiteName">You</span>
+        </div>
+        <div class="clock" id="whiteClock">10:00</div>
+        <div class="captured" id="whiteCaptured"></div>
+      </section>
+
+      <section class="board-wrapper">
+        <div class="board" id="board"></div>
+        <div class="coord coord-files" id="files"></div>
+        <div class="coord coord-ranks" id="ranks"></div>
+      </section>
+
+      <section class="side-panel" id="blackPanel">
+        <h2>Black</h2>
+        <div class="player-info" id="blackInfo">
+          <span class="label">Player:</span>
+          <span id="blackName">Computer</span>
+        </div>
+        <div class="clock" id="blackClock">10:00</div>
+        <div class="captured" id="blackCaptured"></div>
+      </section>
+    </main>
+
+    <section class="bottom-panel">
+      <div class="status" id="status">Welcome to Online Chess</div>
+      <div class="move-log" id="moveLog"></div>
+    </section>
+
+    <!-- PARENTAL CONTROL AREA (only visible to parent accounts) -->
+    <section class="parent-panel" id="parentPanel">
+      <h3>Parental controls</h3>
+      <label class="toggle">
+        <input type="checkbox" id="allowPlayToggle" />
+        <span>Allow child to play chess</span>
+      </label>
+      <p class="parent-note">
+        When disabled, the chessboard and controls are hidden for child accounts on this device.
+      </p>
+    </section>
+  </div>
+
+  <script src="chess.js"></script>
+</div>
+</body>
 </html>
