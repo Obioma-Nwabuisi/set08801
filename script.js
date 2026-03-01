@@ -896,11 +896,7 @@ boardElement.addEventListener("click", onSquareClick);
 newGameBtn.addEventListener("click", resetBoard);
 flipBoardBtn.addEventListener("click", flipBoard);
 
-loadUserFromStorage();
-applyUserStateToUI();
-
-// Only start chess if a user exists and is allowed
-if (currentUser && (currentUser.role === "parent" || allowPlay)) {
+{
   resetBoard();
 }
 
