@@ -854,7 +854,7 @@ loginForm.addEventListener("submit", function (e) {
     return;
   }
 
-  // In a real app, you would send this to a backend and verify securely.
+  // In a real application with backend and server-side capabilities, this would be sent to a backend and verified securely.
   currentUser = { username, role };
   // For new child users, default allowPlay = true; for parents, keep last setting.
   if (role === "child" && allowPlay === undefined) {
