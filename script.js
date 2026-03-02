@@ -8,7 +8,6 @@
 // - Simple computer opponent (Black, random legal move)
 
 const boardElement = document.getElementById("board");
-const statusElement = document.getElementById("status");
 const moveLogElement = document.getElementById("moveLog");
 const filesElement = document.getElementById("files");
 const ranksElement = document.getElementById("ranks");
@@ -16,19 +15,6 @@ const newGameBtn = document.getElementById("newGameBtn");
 const flipBoardBtn = document.getElementById("flipBoardBtn");
 const whiteClockElement = document.getElementById("whiteClock");
 const blackClockElement = document.getElementById("blackClock");
-// Login & parental control elements
-const loginPanel = document.getElementById("loginPanel");
-const loginForm = document.getElementById("loginForm");
-const loginError = document.getElementById("loginError");
-const appInner = document.getElementById("appInner");
-const currentUserLabel = document.getElementById("currentUserLabel");
-const logoutBtn = document.getElementById("logoutBtn");
-const parentPanel = document.getElementById("parentPanel");
-const allowPlayToggle = document.getElementById("allowPlayToggle");
-
-// Current user / parental control state (front-end only, not secure)
-let currentUser = null; // { username, role: "parent" | "child" }
-let allowPlay = true;   // if false and role is child, hide chess UI
 
 // Game state
 let board = [];
@@ -832,65 +818,6 @@ function flipBoard() {
   flipped = !flipped;
   renderBoard();
 }
-
-// Simple demo credential rules (NOT SECURE, for learning only):
-// - If role = "parent": password must be "parent123".
-// - If role = "child": any non-empty password is accepted.
-loginForm.addEventListener("submit", function (e) {
-  e.preventDefault();
-  const username = loginForm.username.value.trim();
-  const password = loginForm.password.value;
-  const role = loginForm.role.value;
-
-  loginError.textContent = "";
-
-  if (!username || !password) {
-    loginError.textContent = "Please enter username and password.";
-    return;
-  }
-
-  if (role === "parent" && password !== "parent123") {
-    loginError.textContent = "Invalid parent password.";
-    return;
-  }
-
-  // In a real application with backend and server-side capabilities, this would be sent to a backend and verified securely.
-  currentUser = { username, role };
-  // For new child users, default allowPlay = true; for parents, keep last setting.
-  if (role === "child" && allowPlay === undefined) {
-    allowPlay = true;
-  }
-
-  saveUserToStorage();
-  applyUserStateToUI();
-
-  // Start or stop the chess engine depending on role + allowPlay
-  if (role === "child" && !allowPlay) {
-    stopTimer();
-  } else {
-    resetBoard();
-  }
-});
-
-logoutBtn.addEventListener("click", function () {
-  currentUser = null;
-  stopTimer();
-  saveUserToStorage();
-  applyUserStateToUI();
-});
-
-allowPlayToggle.addEventListener("change", function () {
-  allowPlay = allowPlayToggle.checked;
-  saveUserToStorage();
-  applyUserStateToUI();
-  if (currentUser && currentUser.role === "child") {
-    if (!allowPlay) {
-      stopTimer();
-    } else {
-      resetBoard();
-    }
-  }
-});
 
 boardElement.addEventListener("click", onSquareClick);
 newGameBtn.addEventListener("click", resetBoard);
