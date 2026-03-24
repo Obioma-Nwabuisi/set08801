@@ -1,6 +1,6 @@
 // Handles login, logout, parental controls, and app visibility.
 
-// DOM elements
+// DOM elements for auth + layout
 const loginPanel = document.getElementById("loginPanel");
 const loginForm = document.getElementById("loginForm");
 const loginError = document.getElementById("loginError");
@@ -15,11 +15,11 @@ const statusElement = document.getElementById("status");
 const STORAGE_KEY_USER = "chess_user";
 const STORAGE_KEY_ALLOW = "chess_allow_play";
 
-// Global auth state (used by chess.js as well)
+// Global auth state (also used by chess.js)
 let currentUser = null; // { username, role: "parent" | "child" }
-let allowPlay = true;
+let allowPlay = true;   // whether children can play on this device
 
-// Load & save user state to localStorage
+// Save user + parental setting to localStorage
 function saveUserToStorage() {
   if (currentUser) {
     localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
@@ -29,20 +29,25 @@ function saveUserToStorage() {
   localStorage.setItem(STORAGE_KEY_ALLOW, allowPlay ? "1" : "0");
 }
 
+// Load user + parental setting from localStorage
 function loadUserFromStorage() {
   const userStr = localStorage.getItem(STORAGE_KEY_USER);
   const allowStr = localStorage.getItem(STORAGE_KEY_ALLOW);
+
   if (userStr) {
     try {
       currentUser = JSON.parse(userStr);
     } catch (e) {
       currentUser = null;
     }
+  } else {
+    currentUser = null;
   }
+
   allowPlay = allowStr !== "0"; // default true
 }
 
-// Apply auth/parent state to the UI (called by both auth.js and chess.js)
+// Apply auth/parental state to the UI
 function applyUserStateToUI() {
   if (!currentUser) {
     // No one logged in: show login form, hide app
@@ -56,17 +61,17 @@ function applyUserStateToUI() {
 
   currentUserLabel.textContent = currentUser.username + " (" + currentUser.role + ")";
 
-  // Show parent controls only for parents
+  // Parent controls visible only to parents
   if (currentUser.role === "parent") {
     parentPanel.style.display = "block";
   } else {
     parentPanel.style.display = "none";
   }
 
-  // If child and not allowed, hide core chess UI
   const mainLayout = document.querySelector(".main-layout");
   const bottomPanel = document.querySelector(".bottom-panel");
 
+  // If child is not allowed, hide chess UI
   if (currentUser.role === "child" && !allowPlay) {
     if (mainLayout) mainLayout.style.display = "none";
     if (bottomPanel) bottomPanel.style.display = "none";
@@ -79,9 +84,12 @@ function applyUserStateToUI() {
   allowPlayToggle.checked = allowPlay;
 }
 
-// Handle login form submit
+// DEMO RULES (front‑end only, not secure):
+// - Parent: password must be "parent123"
+// - Child: any non‑empty password
 loginForm.addEventListener("submit", function (e) {
   e.preventDefault();
+
   const username = loginForm.username.value.trim();
   const password = loginForm.password.value;
   const role = loginForm.role.value;
@@ -93,52 +101,50 @@ loginForm.addEventListener("submit", function (e) {
     return;
   }
 
-  // Demo rule: parent password must be "parent123"; child password can be anything
   if (role === "parent" && password !== "parent123") {
     loginError.textContent = "Invalid parent password.";
     return;
   }
 
   currentUser = { username, role };
-
   saveUserToStorage();
   applyUserStateToUI();
 
-  // Chess initialisation is handled from chess.js after this script loads
-  if (typeof resetBoard === "function" && role !== "child") {
-    resetBoard();
-  } else if (typeof resetBoard === "function" && role === "child" && allowPlay) {
-    resetBoard();
+  // Start or stop chess depending on role + allowPlay
+  if (typeof resetBoard === "function") {
+    if (role === "child" && !allowPlay) {
+      if (typeof stopTimer === "function") stopTimer();
+    } else {
+      resetBoard();
+    }
   }
 });
 
-// Logout
+// Logout button
 logoutBtn.addEventListener("click", function () {
   currentUser = null;
   saveUserToStorage();
   applyUserStateToUI();
-
   if (typeof stopTimer === "function") {
     stopTimer();
   }
 });
 
-// Parent toggles allowPlay setting
+// Parent toggles play allowed / blocked
 allowPlayToggle.addEventListener("change", function () {
   allowPlay = allowPlayToggle.checked;
   saveUserToStorage();
   applyUserStateToUI();
 
   if (currentUser && currentUser.role === "child") {
-    if (!allowPlay && typeof stopTimer === "function") {
-      stopTimer();
-    }
-    if (allowPlay && typeof resetBoard === "function") {
-      resetBoard();
+    if (!allowPlay) {
+      if (typeof stopTimer === "function") stopTimer();
+    } else {
+      if (typeof resetBoard === "function") resetBoard();
     }
   }
 });
 
-// Initial load: restore stored user + apply
+// On page load, restore state
 loadUserFromStorage();
 applyUserStateToUI();

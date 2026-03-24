@@ -1,16 +1,11 @@
-// Enhanced chess engine & UI.
-// Features:
-// - Human vs human on one device
-// - Legal move generation with check/checkmate detection
-// - Pawn promotion
-// - Castling
-// - Countdown timers
-// - Simple computer opponent (Black, random legal move)
+// Handles chess board, moves, engine, timers.
+// Depends on auth.js for currentUser, allowPlay, statusElement.
 
+// DOM elements specific to chess
 const boardElement = document.getElementById("board");
-const moveLogElement = document.getElementById("moveLog");
 const filesElement = document.getElementById("files");
 const ranksElement = document.getElementById("ranks");
+const moveLogElement = document.getElementById("moveLog");
 const newGameBtn = document.getElementById("newGameBtn");
 const flipBoardBtn = document.getElementById("flipBoardBtn");
 const whiteClockElement = document.getElementById("whiteClock");
@@ -29,71 +24,12 @@ let whiteCanCastleKing = true;
 let whiteCanCastleQueen = true;
 let blackCanCastleKing = true;
 let blackCanCastleQueen = true;
-let enPassantTarget = null; // index behind a pawn that moved two squares
+let enPassantTarget = null;
 
-// Timers (seconds)
+// Timers
 let whiteTime = 10 * 60;
 let blackTime = 10 * 60;
 let timerInterval = null;
-
-const STORAGE_KEY_USER = "chess_user";
-const STORAGE_KEY_ALLOW = "chess_allow_play";
-
-function saveUserToStorage() {
-  if (currentUser) {
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
-  } else {
-    localStorage.removeItem(STORAGE_KEY_USER);
-  }
-  localStorage.setItem(STORAGE_KEY_ALLOW, allowPlay ? "1" : "0");
-}
-
-function loadUserFromStorage() {
-  const userStr = localStorage.getItem(STORAGE_KEY_USER);
-  const allowStr = localStorage.getItem(STORAGE_KEY_ALLOW);
-  if (userStr) {
-    try {
-      currentUser = JSON.parse(userStr);
-    } catch (e) {
-      currentUser = null;
-    }
-  }
-  allowPlay = allowStr !== "0"; // default true
-}
-
-function applyUserStateToUI() {
-  if (!currentUser) {
-    // No one logged in: show login panel, hide chess UI
-    loginPanel.style.display = "block";
-    appInner.style.display = "none";
-    return;
-  }
-
-  loginPanel.style.display = "none";
-  appInner.style.display = "block";
-
-  currentUserLabel.textContent = currentUser.username + " (" + currentUser.role + ")";
-
-  // Parent panel visible only for parents
-  if (currentUser.role === "parent") {
-    parentPanel.style.display = "block";
-  } else {
-    parentPanel.style.display = "none";
-  }
-
-  // Parent can decide if a child can see/play chess
-  if (currentUser.role === "child" && !allowPlay) {
-    // Hide board + controls from child
-    document.querySelector(".main-layout").style.display = "none";
-    document.querySelector(".bottom-panel").style.display = "none";
-    statusElement.textContent = "Play blocked by parental controls.";
-  } else {
-    document.querySelector(".main-layout").style.display = "";
-    document.querySelector(".bottom-panel").style.display = "";
-  }
-
-  allowPlayToggle.checked = allowPlay;
-}
 
 // Mode: human vs computer (Black)
 const vsComputer = true;
@@ -101,7 +37,6 @@ const vsComputer = true;
 const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
 const RANKS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
-// Unicode pieces
 const PIECE_UNICODE = {
   "P": "\u2659",
   "N": "\u2658",
@@ -158,13 +93,11 @@ function resetBoard() {
   const backRankWhite = ["R", "N", "B", "Q", "K", "B", "N", "R"];
   const backRankBlack = ["r", "n", "b", "q", "k", "b", "n", "r"];
 
-  // White pieces
   for (let f = 0; f < 8; f++) {
     setPiece(coordToIndex(f, 0), backRankWhite[f]);
     setPiece(coordToIndex(f, 1), "P");
   }
 
-  // Black pieces
   for (let f = 0; f < 8; f++) {
     setPiece(coordToIndex(f, 7), backRankBlack[f]);
     setPiece(coordToIndex(f, 6), "p");
@@ -193,7 +126,7 @@ function resetBoard() {
   updateStatus();
 }
 
-// Timer functions
+// Timers
 function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
   timerInterval = setInterval(() => {
@@ -232,7 +165,7 @@ function updateClocks() {
   blackClockElement.textContent = formatTime(blackTime);
 }
 
-// Move generation (pseudo-legal, then filtered)
+// Move generation
 function generateMovesForSquare(index) {
   const piece = getPiece(index);
   if (!piece) return [];
@@ -255,7 +188,6 @@ function generateMovesForSquare(index) {
     const startRank = isWhitePiece ? 1 : 6;
     const promotionRank = isWhitePiece ? 7 : 0;
 
-    // Forward moves
     const oneStepRank = rank + forward;
     if (inBounds(file, oneStepRank)) {
       const oneStepIndex = coordToIndex(file, oneStepRank);
@@ -279,7 +211,6 @@ function generateMovesForSquare(index) {
       }
     }
 
-    // Captures
     for (const df of [-1, 1]) {
       const captureFile = file + df;
       const captureRank = rank + forward;
@@ -300,7 +231,6 @@ function generateMovesForSquare(index) {
       }
     }
 
-    // En passant
     if (enPassantTarget !== null) {
       const { file: epFile, rank: epRank } = indexToCoord(enPassantTarget);
       if (epRank === rank + forward && Math.abs(epFile - file) === 1) {
@@ -350,7 +280,6 @@ function generateMovesForSquare(index) {
       }
     }
   } else if (piece.toLowerCase() === "k") {
-    // Normal king moves
     const deltas = [];
     for (let df = -1; df <= 1; df++) {
       for (let dr = -1; dr <= 1; dr++) {
@@ -369,15 +298,12 @@ function generateMovesForSquare(index) {
       }
     }
 
-    // Castling (simplified: assumes king/rook haven’t moved and ignores check-through squares)
     if (isWhitePiece && rank === 0 && file === 4) {
-      // White king side
       if (whiteCanCastleKing &&
           !getPiece(coordToIndex(5, 0)) &&
           !getPiece(coordToIndex(6, 0))) {
         addMove(coordToIndex(6, 0), { castle: "K" });
       }
-      // White queen side
       if (whiteCanCastleQueen &&
           !getPiece(coordToIndex(1, 0)) &&
           !getPiece(coordToIndex(2, 0)) &&
@@ -386,13 +312,11 @@ function generateMovesForSquare(index) {
       }
     }
     if (!isWhitePiece && rank === 7 && file === 4) {
-      // Black king side
       if (blackCanCastleKing &&
           !getPiece(coordToIndex(5, 7)) &&
           !getPiece(coordToIndex(6, 7))) {
         addMove(coordToIndex(6, 7), { castle: "K" });
       }
-      // Black queen side
       if (blackCanCastleQueen &&
           !getPiece(coordToIndex(1, 7)) &&
           !getPiece(coordToIndex(2, 7)) &&
@@ -405,7 +329,6 @@ function generateMovesForSquare(index) {
   return moves;
 }
 
-// Apply a move to a given board, return new board + new en passant square
 function makeMoveOnBoard(boardState, move, options = {}) {
   const newBoard = cloneBoard(boardState);
   const piece = newBoard[move.from];
@@ -414,7 +337,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
 
   let newEnPassantTarget = null;
 
-  // En passant capture
   if (move.enPassant) {
     const dir = isWhite(piece) ? -1 : 1;
     const capturedRank = toCoord.rank + dir;
@@ -422,7 +344,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
     newBoard[capturedIndex] = null;
   }
 
-  // Move piece
   newBoard[move.from] = null;
   let finalPiece = piece;
   if (move.promotion) {
@@ -430,7 +351,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
   }
   newBoard[move.to] = finalPiece;
 
-  // En passant target square setup
   if (piece.toLowerCase() === "p") {
     if (Math.abs(toCoord.rank - fromCoord.rank) === 2) {
       const middleRank = (toCoord.rank + fromCoord.rank) / 2;
@@ -438,7 +358,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
     }
   }
 
-  // Handle castling rook move and castle rights
   if (piece.toLowerCase() === "k") {
     if (isWhite(piece)) {
       whiteCanCastleKing = false;
@@ -467,7 +386,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
     }
   }
 
-  // Rook moves remove relevant castle rights
   if (piece === "R") {
     if (fromCoord.rank === 0 && fromCoord.file === 0) whiteCanCastleQueen = false;
     if (fromCoord.rank === 0 && fromCoord.file === 7) whiteCanCastleKing = false;
@@ -477,7 +395,6 @@ function makeMoveOnBoard(boardState, move, options = {}) {
     if (fromCoord.rank === 7 && fromCoord.file === 7) blackCanCastleKing = false;
   }
 
-  // Rook capture also affects castle rights
   if (options.clearCastleRightsForRookCapture) {
     const capturedPiece = boardState[move.to];
     if (capturedPiece === "R") {
@@ -559,7 +476,6 @@ function generateLegalMoves() {
 
       const inCheck = isKingInCheck(newBoard, whiteToMove, newEP);
 
-      // Restore globals
       whiteCanCastleKing = prevCastleRights.wK;
       whiteCanCastleQueen = prevCastleRights.wQ;
       blackCanCastleKing = prevCastleRights.bK;
@@ -588,7 +504,7 @@ function isStalemate() {
   return true;
 }
 
-// UI rendering
+// Rendering
 function renderBoard() {
   boardElement.innerHTML = "";
 
@@ -603,10 +519,8 @@ function renderBoard() {
 
       const square = document.createElement("div");
       square.classList.add("square");
-
       const isLight = (displayFile + displayRank) % 2 === 0;
       square.classList.add(isLight ? "light" : "dark");
-
       square.dataset.index = index;
 
       const piece = getPiece(index);
@@ -690,10 +604,8 @@ function renderMoveLog() {
 
     pair.appendChild(whiteMove);
     pair.appendChild(blackMove);
-
     row.appendChild(indexSpan);
     row.appendChild(pair);
-
     moveLogElement.appendChild(row);
   }
 
@@ -720,12 +632,10 @@ function updateStatus() {
   statusElement.textContent = side + " to move" + checkText + ".";
 }
 
-// Human move handling
+// Human input
 function onSquareClick(e) {
-  // In vs computer mode, user only plays White
-  if (vsComputer && !whiteToMove) {
-    return;
-  }
+  if (vsComputer && !whiteToMove) return;
+  if (currentUser && currentUser.role === "child" && !allowPlay) return;
 
   const square = e.target.closest(".square");
   if (!square) return;
@@ -801,7 +711,7 @@ function playMove(move) {
   }
 }
 
-// Very simple computer: random legal move for Black
+// Simple computer: random legal move for Black
 function computerMove() {
   if (whiteToMove) return;
   const moves = generateLegalMoves();
@@ -819,11 +729,12 @@ function flipBoard() {
   renderBoard();
 }
 
+// Event listeners and startup
 boardElement.addEventListener("click", onSquareClick);
 newGameBtn.addEventListener("click", resetBoard);
 flipBoardBtn.addEventListener("click", flipBoard);
 
-{
+// Start chess only if user is logged in and allowed
+if (currentUser && (currentUser.role === "parent" || allowPlay)) {
   resetBoard();
 }
-
