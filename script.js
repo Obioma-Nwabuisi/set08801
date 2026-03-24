@@ -1,3 +1,7 @@
+// chess.js
+// Handles chess board, moves, engine, timers.
+// Depends on auth.js for currentUser, allowPlay, statusElement.
+// chess.js
 // Handles chess board, moves, engine, timers.
 // Depends on auth.js for currentUser, allowPlay, statusElement.
 
@@ -10,6 +14,7 @@ const newGameBtn = document.getElementById("newGameBtn");
 const flipBoardBtn = document.getElementById("flipBoardBtn");
 const whiteClockElement = document.getElementById("whiteClock");
 const blackClockElement = document.getElementById("blackClock");
+
 
 // Game state
 let board = [];
@@ -738,3 +743,4 @@ flipBoardBtn.addEventListener("click", flipBoard);
 if (currentUser && (currentUser.role === "parent" || allowPlay)) {
   resetBoard();
 }
+

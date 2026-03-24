@@ -1,106 +1,184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- Setting character encoding so text (including Unicode chess pieces) displays correctly-->
   <meta charset="UTF-8" />
-  <!--Ensuring that the layout scales properly on phones and tablets (responsive design)-->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!--Adding the browser tab title-->
-  <title>Chess Game</title>
-  <!--Attaching the external CSS file-->
-  <link rel="stylesheet" href="styles.css" />
+  <title>Reading Adventure & Chess</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<!-- Now the web page body design begins-->
 <body>
-
   <div class="app">
-  <!-- LOGIN / USER AREA -->
-  <section class="login-panel" id="loginPanel">
-    <h2>Sign in</h2>
-    <form id="loginForm">
-      <div class="field">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" required />
-      </div>
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" required />
-      </div>
-      <div class="field">
-        <label for="role">Role</label>
-        <select id="role" name="role">
-          <option value="child">Child</option>
-          <option value="parent">Parent</option>
-        </select>
-      </div>
-      <button type="submit">Login</button>
-      <p class="login-note">
-        Demo passwords: parent = <strong>parent123</strong>, child = anything.
-      </p>
-      <p class="login-error" id="loginError"></p>
-    </form>
-  </section>
-
-  <!-- TOP BAR (only visible when logged in and allowed) -->
-  <div class="app-inner" id="appInner">
-    <header class="top-bar">
-      <h1>Online Chess</h1>
-      <div class="controls">
-        <span class="user-label" id="currentUserLabel"></span>
-        <button id="newGameBtn">New Game</button>
-        <button id="flipBoardBtn">Flip Board</button>
-        <button id="logoutBtn">Logout</button>
-      </div>
-    </header>
-
-    <main class="main-layout">
-      <section class="side-panel" id="whitePanel">
-        <h2>White</h2>
-        <div class="player-info" id="whiteInfo">
-          <span class="label">Player:</span>
-          <span id="whiteName">You</span>
+    <!-- LOGIN / USER AREA -->
+    <section class="login-panel" id="loginPanel">
+      <h2>Sign in</h2>
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" type="text" required />
         </div>
-        <div class="clock" id="whiteClock">10:00</div>
-        <div class="captured" id="whiteCaptured"></div>
-      </section>
-
-      <section class="board-wrapper">
-        <div class="board" id="board"></div>
-        <div class="coord coord-files" id="files"></div>
-        <div class="coord coord-ranks" id="ranks"></div>
-      </section>
-
-      <section class="side-panel" id="blackPanel">
-        <h2>Black</h2>
-        <div class="player-info" id="blackInfo">
-          <span class="label">Player:</span>
-          <span id="blackName">Computer</span>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" required />
         </div>
-        <div class="clock" id="blackClock">10:00</div>
-        <div class="captured" id="blackCaptured"></div>
-      </section>
-    </main>
-
-    <section class="bottom-panel">
-      <div class="status" id="status">Welcome to Online Chess</div>
-      <div class="move-log" id="moveLog"></div>
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role">
+            <option value="child">Child</option>
+            <option value="parent">Parent</option>
+          </select>
+        </div>
+        <button type="submit">Login</button>
+        <p class="login-note">
+          Demo passwords: parent = <strong>parent123</strong>, child = anything.
+        </p>
+        <p class="login-error" id="loginError"></p>
+      </form>
     </section>
 
-    <!-- PARENTAL CONTROL AREA (only visible to parent accounts) -->
-    <section class="parent-panel" id="parentPanel">
-      <h3>Parental controls</h3>
-      <label class="toggle">
-        <input type="checkbox" id="allowPlayToggle" />
-        <span>Allow child to play chess</span>
-      </label>
-      <p class="parent-note">
-        When disabled, the chessboard and controls are hidden for child accounts on this device.
-      </p>
-    </section>
+    <!-- MAIN APP (READING + GAMES) -->
+    <div class="app-inner" id="appInner">
+      <header class="top-bar">
+        <h1>Reading Adventure</h1>
+        <div class="controls">
+          <span class="user-label" id="currentUserLabel"></span>
+          <button id="toWorldMapBtn">Stories</button>
+          <button id="toGamesHubBtn">Games</button>
+          <button id="logoutBtn">Logout</button>
+        </div>
+      </header>
+
+      <!-- WORLD MAP / STORY HUB -->
+      <main class="main-layout" id="worldMap">
+        <section class="side-panel">
+          <h2>Your Profile</h2>
+          <div class="player-info">
+            <span class="label">Level:</span>
+            <span id="profileLevel">Not set</span>
+          </div>
+          <div class="player-info">
+            <span class="label">Stories done:</span>
+            <span id="storiesDone">0</span>
+          </div>
+        </section>
+
+        <section class="board-wrapper">
+          <div class="world-grid">
+            <article class="world-card" data-world="pirateCove">
+              <h3>Pirate Cove</h3>
+              <p>Easy story adventure on the high seas.</p>
+              <button class="start-story-btn" data-world="pirateCove" data-chapter="ch1">Start Chapter 1</button>
+              <div class="world-progress">
+                Completed: <span id="worldPirateProgress">0</span>%
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="side-panel">
+          <h2>Tips</h2>
+          <p>Read the story carefully and answer the quiz to unlock games.</p>
+        </section>
+      </main>
+
+      <!-- STORY + QUIZ SECTION -->
+      <section class="story-layout" id="storySection" style="display:none;">
+        <div class="story-panel">
+          <h2 id="storyTitle">Pirate Cove - Chapter 1</h2>
+          <div class="story-text" id="storyText"></div>
+          <div class="story-actions">
+            <button id="readAloudBtn">Read aloud</button>
+            <button id="toQuizBtn">Take Quiz</button>
+            <button id="backToWorldBtn">Back to Stories</button>
+          </div>
+        </div>
+
+        <div class="quiz-panel" id="quizPanel" style="display:none;">
+          <h3>Quick Quiz</h3>
+          <p id="quizQuestion"></p>
+          <div id="quizOptions" class="quiz-options"></div>
+          <button id="submitQuizBtn">Submit Answer</button>
+          <p id="quizFeedback"></p>
+        </div>
+      </section>
+
+      <!-- GAMES HUB -->
+      <section class="games-hub" id="gamesHub" style="display:none;">
+        <h2>Fun Games</h2>
+        <div class="games-grid">
+          <article class="game-card" id="chessCard">
+            <div class="game-card-header">
+              <h3>Chess Adventure</h3>
+              <span class="lock-label" id="chessLockLabel">Locked</span>
+            </div>
+            <p class="game-card-text" id="chessCardText">
+              Finish a story and pass its quiz to unlock this game.
+            </p>
+            <button id="playChessBtn" disabled>Play Chess</button>
+          </article>
+        </div>
+        <button class="back-btn" id="backFromGamesBtn">Back to Stories</button>
+      </section>
+
+      <!-- PARENTAL CONTROLS -->
+      <section class="parent-panel" id="parentPanel">
+        <h3>Parental controls</h3>
+        <label class="toggle">
+          <input type="checkbox" id="allowPlayToggle" />
+          <span>Allow child to play games</span>
+        </label>
+        <p class="parent-note">
+          When disabled, the games hub and chess are hidden for child accounts.
+        </p>
+      </section>
+
+      <!-- CHESS GAME WRAPPER -->
+      <section class="chess-wrapper" id="chessWrapper" style="display:none;">
+        <header class="top-bar">
+          <h1>Chess Adventure</h1>
+          <div class="controls">
+            <button id="backFromChessBtn">Back to Games</button>
+          </div>
+        </header>
+
+        <main class="main-layout">
+          <section class="side-panel" id="whitePanel">
+            <h2>White</h2>
+            <div class="player-info" id="whiteInfo">
+              <span class="label">Player:</span>
+              <span id="whiteName">You</span>
+            </div>
+            <div class="clock" id="whiteClock">10:00</div>
+            <div class="captured" id="whiteCaptured"></div>
+          </section>
+
+          <section class="board-wrapper">
+            <div class="board" id="board"></div>
+            <div class="coord coord-files" id="files"></div>
+            <div class="coord coord-ranks" id="ranks"></div>
+          </section>
+
+          <section class="side-panel" id="blackPanel">
+            <h2>Black</h2>
+            <div class="player-info" id="blackInfo">
+              <span class="label">Player:</span>
+              <span id="blackName">Computer</span>
+            </div>
+            <div class="clock" id="blackClock">10:00</div>
+            <div class="captured" id="blackCaptured"></div>
+          </section>
+        </main>
+
+        <section class="bottom-panel">
+          <div class="status" id="status">Welcome to Chess Adventure</div>
+          <div class="move-log" id="moveLog"></div>
+        </section>
+      </section>
+    </div>
   </div>
-     <script src="auth.js"></script>
+
+  <script src="reading_progress.js"></script>
+  <script src="auth.js"></script>
+  <script src="reading_app.js"></script>
   <script src="script.js"></script>
-  
-</div>
 </body>
 </html>
