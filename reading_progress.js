@@ -13,6 +13,21 @@ function loadReadingProgress() {
           chapters: {
             ch1: { completed: false, quizScore: 0 }
           }
+        },
+        enchantedForest: {
+          chapters: {
+            ch1: { completed: false, quizScore: 0 }
+          }
+        },
+        spaceStation: {
+          chapters: {
+            ch1: { completed: false, quizScore: 0 }
+          }
+        },
+        underwaterCity: {
+          chapters: {
+            ch1: { completed: false, quizScore: 0 }
+          }
         }
       },
       gamesUnlocked: {
@@ -37,7 +52,9 @@ function saveReadingProgress(state) {
 function markChapterComplete(worldId, chapterId, quizScore) {
   const state = loadReadingProgress();
   if (!state.worlds[worldId]) state.worlds[worldId] = { chapters: {} };
-  if (!state.worlds[worldId].chapters[chapterId]) state.worlds[worldId].chapters[chapterId] = { completed: false, quizScore: 0 };
+  if (!state.worlds[worldId].chapters[chapterId]) {
+    state.worlds[worldId].chapters[chapterId] = { completed: false, quizScore: 0 };
+  }
 
   state.worlds[worldId].chapters[chapterId].completed = true;
   state.worlds[worldId].chapters[chapterId].quizScore = quizScore;
@@ -48,9 +65,14 @@ function markChapterComplete(worldId, chapterId, quizScore) {
 }
 
 function unlockChessIfEligible(state) {
-  const pirate = state.worlds.pirateCove;
-  if (pirate && pirate.chapters.ch1 && pirate.chapters.ch1.completed && pirate.chapters.ch1.quizScore >= 1) {
-    state.gamesUnlocked.chess = true;
+  // Unlock chess if any chapter in any world has a passing score (>=1)
+  for (const worldId of Object.keys(state.worlds)) {
+    const world = state.worlds[worldId];
+    const chapters = Object.values(world.chapters);
+    if (chapters.some(ch => ch.completed && ch.quizScore >= 1)) {
+      state.gamesUnlocked.chess = true;
+      return;
+    }
   }
 }
 
