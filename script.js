@@ -9,6 +9,10 @@ const moveLogElement = document.getElementById("moveLog");
 const whiteClockElement = document.getElementById("whiteClock");
 const blackClockElement = document.getElementById("blackClock");
 
+// Sound effects
+const clickSound = new Audio("sounds-click.mpeg");
+const moveSound = new Audio("sounds-move.mpeg");
+
 // Optional buttons (add to HTML header if you want)
 // <button id="newGameBtn">New Game</button>
 // <button id="flipBoardBtn">Flip Board</button>
@@ -548,6 +552,12 @@ function updateStatus() {
 // Input
 
 function onSquareClick(e) {
+  // Play basic click on any board tap
+  if (clickSound) {
+    clickSound.currentTime = 0;
+    clickSound.play().catch(() => {});
+  }
+
   if (!currentUser || (currentUser.role === "child" && !allowPlay)) {
     if (statusElement) statusElement.textContent = "Play blocked by parental controls.";
     return;
