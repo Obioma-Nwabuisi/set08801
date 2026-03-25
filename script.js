@@ -411,6 +411,12 @@ function generateLegalMoves(forWhite) {
 // Making moves
 
 function makeMove(move) {
+  // Play move / landing sound
+  if (moveSound) {
+    moveSound.currentTime = 0;
+    moveSound.play().catch(() => {});
+  }
+
   const movingPiece = getPiece(move.from);
   const captured = getPiece(move.to);
 
