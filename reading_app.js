@@ -34,7 +34,6 @@ const chessLockLabel = document.getElementById("chessLockLabel");
 const chessCardText = document.getElementById("chessCardText");
 const playChessBtn = document.getElementById("playChessBtn");
 
-// Story + quiz data for all worlds, Chapter 1
 const STORIES = {
   pirateCove: {
     ch1: {
@@ -46,11 +45,7 @@ const STORIES = {
       ],
       quiz: {
         question: "Who guards the treasure at Pirate Cove?",
-        options: [
-          "A friendly sea dragon",
-          "A band of robots",
-          "A giant parrot"
-        ],
+        options: ["A friendly sea dragon", "A band of robots", "A giant parrot"],
         correctIndex: 0
       }
     }
@@ -59,17 +54,13 @@ const STORIES = {
     ch1: {
       title: "Enchanted Forest - Chapter 1",
       paragraphs: [
-        "You follow a narrow path into the Enchanted Forest. The leaves glow softly like tiny lanterns.",
-        "A squirrel in a tiny waistcoat runs up to you and drops a silver acorn at your feet.",
-        "\"The forest chose you,\" it squeaks. \"Take this acorn to the Heart Tree and make a wish.\""
+        "You step into a glowing forest where lantern flowers light the path.",
+        "A fox in a blue scarf bows and asks for help finding the Moon Key.",
+        "Far away, an owl calls from the top of an ancient silver tree."
       ],
       quiz: {
-        question: "What special object does the squirrel give you?",
-        options: [
-          "A silver acorn",
-          "A golden crown",
-          "A magic broom"
-        ],
+        question: "Who asks for help in the Enchanted Forest?",
+        options: ["A fox in a blue scarf", "A sleepy dragon", "A pirate captain"],
         correctIndex: 0
       }
     }
@@ -78,17 +69,13 @@ const STORIES = {
     ch1: {
       title: "Space Station - Chapter 1",
       paragraphs: [
-        "You float down the bright hallway of Star Station Seven, your boots clicking softly on the metal floor.",
-        "Commander Vega points to a blinking red light above the control panel.",
-        "\"One of our solar panels is stuck,\" she explains. \"We need your help to fix it before the next meteor shower.\""
+        "You float into the Starbright Station and gently push off the doorway.",
+        "Commander Nova explains that the solar panels have stopped turning.",
+        "Without power, the station's garden dome may go dark."
       ],
       quiz: {
-        question: "What problem does Star Station Seven have?",
-        options: [
-          "A stuck solar panel",
-          "A lost spaceship",
-          "A missing robot cat"
-        ],
+        question: "What problem does Commander Nova explain?",
+        options: ["The station lost its solar power", "The station is full of pirates", "The station found treasure"],
         correctIndex: 0
       }
     }
@@ -97,17 +84,13 @@ const STORIES = {
     ch1: {
       title: "Underwater City - Chapter 1",
       paragraphs: [
-        "Bubbles rise around you as you swim through the gates of the underwater city of Coraluna.",
-        "Fish of every color dart past glowing shells that light the streets like lanterns.",
-        "A dolphin with a small backpack swims up and offers to guide you to the Bubble Library."
+        "You arrive in Coral City inside a bubble tram that glides through the sea.",
+        "Mayor Marina welcomes you and points to the dim pearl lights around town.",
+        "She says the lights only glow when the song shell is found."
       ],
       quiz: {
-        question: "Who offers to guide you in Coraluna?",
-        options: [
-          "A dolphin with a backpack",
-          "A talking crab",
-          "A singing turtle"
-        ],
+        question: "Why is Coral City dim?",
+        options: ["The song shell is missing", "A dragon took the treasure", "The forest is too dark"],
         correctIndex: 0
       }
     }
@@ -124,12 +107,13 @@ function showWorldMap() {
   chessWrapper.style.display = "none";
 
   worldPirateProgressEl.textContent = String(getWorldCompletionPercent("pirateCove"));
-  worldEnchantedProgressEl.textContent = String(getWorldCompletionPercent("enchantedForest"));
-  worldSpaceProgressEl.textContent = String(getWorldCompletionPercent("spaceStation"));
-  worldUnderwaterProgressEl.textContent = String(getWorldCompletionPercent("underwaterCity"));
-  storiesDoneEl.textContent = String(getTotalStoriesDone());
+  if (worldEnchantedProgressEl) worldEnchantedProgressEl.textContent = String(getWorldCompletionPercent("enchantedForest"));
+  if (worldSpaceProgressEl) worldSpaceProgressEl.textContent = String(getWorldCompletionPercent("spaceStation"));
+  if (worldUnderwaterProgressEl) worldUnderwaterProgressEl.textContent = String(getWorldCompletionPercent("underwaterCity"));
 
+  storiesDoneEl.textContent = String(getTotalStoriesDone());
   updateGameUnlocks();
+  if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
 function showStory(worldId, chapterId) {
@@ -144,7 +128,6 @@ function showStory(worldId, chapterId) {
   storySection.style.display = "grid";
   gamesHub.style.display = "none";
   chessWrapper.style.display = "none";
-
   quizPanel.style.display = "none";
   quizFeedbackEl.textContent = "";
 }
@@ -154,8 +137,8 @@ function showGamesHub() {
   storySection.style.display = "none";
   chessWrapper.style.display = "none";
   gamesHub.style.display = "block";
-
   updateGameUnlocks();
+  if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
 function showChess() {
@@ -163,9 +146,16 @@ function showChess() {
   storySection.style.display = "none";
   gamesHub.style.display = "none";
   chessWrapper.style.display = "block";
+
+  if (typeof playSound === "function" && typeof startSound !== "undefined") {
+    playSound(startSound);
+  }
+  if (typeof resetBoard === "function") {
+    resetBoard();
+  }
+  if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
-// Web Speech API best-effort read-aloud
 function readCurrentStoryAloud() {
   if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return;
   const story = STORIES[currentWorldId][currentChapterId];
@@ -182,14 +172,13 @@ function showQuiz() {
   quizQuestionEl.textContent = quiz.question;
   quizOptionsEl.innerHTML = "";
 
-  quiz.options = quiz.options || [];
-
   quiz.options.forEach((option, idx) => {
     const label = document.createElement("label");
     const input = document.createElement("input");
     input.type = "radio";
     input.name = "quizOption";
     input.value = String(idx);
+
     label.appendChild(input);
     label.appendChild(document.createTextNode(option));
     quizOptionsEl.appendChild(label);
@@ -202,7 +191,7 @@ function showQuiz() {
 function handleQuizSubmit() {
   const story = STORIES[currentWorldId][currentChapterId];
   const quiz = story.quiz;
-  const checked = quizOptionsEl.querySelector("input[name='quizOption']:checked");
+  const checked = quizOptionsEl.querySelector('input[name="quizOption"]:checked');
 
   if (!checked) {
     quizFeedbackEl.textContent = "Please choose an answer.";
@@ -216,13 +205,28 @@ function handleQuizSubmit() {
     quizFeedbackEl.textContent = "Correct! You finished the chapter and unlocked a reward.";
     markChapterComplete(currentWorldId, currentChapterId, 1);
 
-    worldPirateProgressEl.textContent = String(getWorldCompletionPercent("pirateCove"));
-    worldEnchantedProgressEl.textContent = String(getWorldCompletionPercent("enchantedForest"));
-    worldSpaceProgressEl.textContent = String(getWorldCompletionPercent("spaceStation"));
-    worldUnderwaterProgressEl.textContent = String(getWorldCompletionPercent("underwaterCity"));
     storiesDoneEl.textContent = String(getTotalStoriesDone());
+    worldPirateProgressEl.textContent = String(getWorldCompletionPercent("pirateCove"));
+    if (worldEnchantedProgressEl) worldEnchantedProgressEl.textContent = String(getWorldCompletionPercent("enchantedForest"));
+    if (worldSpaceProgressEl) worldSpaceProgressEl.textContent = String(getWorldCompletionPercent("spaceStation"));
+    if (worldUnderwaterProgressEl) worldUnderwaterProgressEl.textContent = String(getWorldCompletionPercent("underwaterCity"));
 
     updateGameUnlocks();
+
+    if (typeof addCoins === "function") {
+      addCoins(10);
+    }
+
+    if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function") {
+      if (markRewardMilestone("firstQuiz")) {
+        unlockSticker("firstQuiz");
+      }
+      if (markRewardMilestone("firstStory")) {
+        unlockSticker("storyHero");
+      }
+    }
+
+    if (typeof renderRewardsUI === "function") renderRewardsUI();
   } else {
     quizFeedbackEl.textContent = "Not quite. Try again or reread the story.";
   }
@@ -244,12 +248,10 @@ function updateGameUnlocks() {
   }
 }
 
-// Event wiring
 toWorldMapBtn.addEventListener("click", showWorldMap);
 toGamesHubBtn.addEventListener("click", showGamesHub);
 backFromGamesBtn.addEventListener("click", showWorldMap);
 backFromChessBtn.addEventListener("click", showGamesHub);
-
 readAloudBtn.addEventListener("click", readCurrentStoryAloud);
 toQuizBtn.addEventListener("click", showQuiz);
 backToWorldBtn.addEventListener("click", showWorldMap);
@@ -258,12 +260,8 @@ submitQuizBtn.addEventListener("click", handleQuizSubmit);
 playChessBtn.addEventListener("click", () => {
   if (!getChessUnlocked()) return;
   showChess();
-  if (typeof resetBoard === "function") {
-    resetBoard();
-  }
 });
 
-// World card start buttons
 Array.from(document.querySelectorAll(".start-story-btn")).forEach(btn => {
   btn.addEventListener("click", () => {
     const worldId = btn.getAttribute("data-world");
@@ -272,5 +270,4 @@ Array.from(document.querySelectorAll(".start-story-btn")).forEach(btn => {
   });
 });
 
-// Initial load
 showWorldMap();

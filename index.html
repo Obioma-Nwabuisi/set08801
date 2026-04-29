@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="app">
-    <!-- LOGIN / USER AREA -->
     <section class="login-panel" id="loginPanel">
       <h2>Sign in</h2>
       <form id="loginForm">
@@ -35,7 +34,6 @@
       </form>
     </section>
 
-    <!-- MAIN APP (READING + GAMES) -->
     <div class="app-inner" id="appInner">
       <header class="top-bar">
         <h1>Reading Adventure</h1>
@@ -47,7 +45,6 @@
         </div>
       </header>
 
-      <!-- WORLD MAP / STORY HUB -->
       <main class="main-layout" id="worldMap">
         <section class="side-panel">
           <h2>Your Profile</h2>
@@ -59,67 +56,62 @@
             <span class="label">Stories done:</span>
             <span id="storiesDone">0</span>
           </div>
+          <div class="player-info">
+            <span class="label">Coins:</span>
+            <span id="coinsCount">0</span>
+          </div>
+          <div class="player-info">
+            <span class="label">Active pet:</span>
+            <span id="activePetLabel">None</span>
+          </div>
+          <div class="pet-preview" id="activePetPreview">🐾</div>
         </section>
 
         <section class="board-wrapper">
           <div class="world-grid">
-            <!-- Pirate Cove -->
             <article class="world-card" data-world="pirateCove">
               <h3>Pirate Cove</h3>
               <p>Easy story adventure on the high seas.</p>
-              <button class="start-story-btn" data-world="pirateCove" data-chapter="ch1">
-                Start Chapter 1
-              </button>
-              <div class="world-progress">
-                Completed: <span id="worldPirateProgress">0</span>%
-              </div>
+              <button class="start-story-btn" data-world="pirateCove" data-chapter="ch1">Start Chapter 1</button>
+              <div class="world-progress">Completed: <span id="worldPirateProgress">0</span>%</div>
             </article>
 
-            <!-- Enchanted Forest -->
             <article class="world-card" data-world="enchantedForest">
               <h3>Enchanted Forest</h3>
               <p>Meet talking animals and glowing trees.</p>
-              <button class="start-story-btn" data-world="enchantedForest" data-chapter="ch1">
-                Start Chapter 1
-              </button>
-              <div class="world-progress">
-                Completed: <span id="worldEnchantedProgress">0</span>%
-              </div>
+              <button class="start-story-btn" data-world="enchantedForest" data-chapter="ch1">Start Chapter 1</button>
+              <div class="world-progress">Completed: <span id="worldEnchantedProgress">0</span>%</div>
             </article>
 
-            <!-- Space Station -->
             <article class="world-card" data-world="spaceStation">
               <h3>Space Station</h3>
               <p>Help young astronauts fix a space station.</p>
-              <button class="start-story-btn" data-world="spaceStation" data-chapter="ch1">
-                Start Chapter 1
-              </button>
-              <div class="world-progress">
-                Completed: <span id="worldSpaceProgress">0</span>%
-              </div>
+              <button class="start-story-btn" data-world="spaceStation" data-chapter="ch1">Start Chapter 1</button>
+              <div class="world-progress">Completed: <span id="worldSpaceProgress">0</span>%</div>
             </article>
 
-            <!-- Underwater City -->
             <article class="world-card" data-world="underwaterCity">
               <h3>Underwater City</h3>
               <p>Explore a city of friendly sea creatures.</p>
-              <button class="start-story-btn" data-world="underwaterCity" data-chapter="ch1">
-                Start Chapter 1
-              </button>
-              <div class="world-progress">
-                Completed: <span id="worldUnderwaterProgress">0</span>%
-              </div>
+              <button class="start-story-btn" data-world="underwaterCity" data-chapter="ch1">Start Chapter 1</button>
+              <div class="world-progress">Completed: <span id="worldUnderwaterProgress">0</span>%</div>
             </article>
           </div>
         </section>
 
         <section class="side-panel">
-          <h2>Tips</h2>
-          <p>Read the story carefully and answer the quiz to unlock games.</p>
+          <h2>Rewards</h2>
+          <div class="player-info">
+            <span class="label">Stickers:</span>
+            <span id="stickersCount">0</span>
+          </div>
+          <div class="stickers-grid" id="stickersGrid"></div>
+
+          <h3 style="margin-top: 0.8rem;">Pet Shop</h3>
+          <div class="pets-grid" id="petsGrid"></div>
         </section>
       </main>
 
-      <!-- STORY + QUIZ SECTION -->
       <section class="story-layout" id="storySection" style="display:none;">
         <div class="story-panel">
           <h2 id="storyTitle">Pirate Cove - Chapter 1</h2>
@@ -140,7 +132,6 @@
         </div>
       </section>
 
-      <!-- GAMES HUB -->
       <section class="games-hub" id="gamesHub" style="display:none;">
         <h2>Fun Games</h2>
         <div class="games-grid">
@@ -158,7 +149,6 @@
         <button class="back-btn" id="backFromGamesBtn">Back to Stories</button>
       </section>
 
-      <!-- PARENTAL CONTROLS -->
       <section class="parent-panel" id="parentPanel">
         <h3>Parental controls</h3>
         <label class="toggle">
@@ -170,7 +160,6 @@
         </p>
       </section>
 
-      <!-- CHESS GAME WRAPPER -->
       <section class="chess-wrapper" id="chessWrapper" style="display:none;">
         <header class="top-bar">
           <h1>Chess Adventure</h1>
@@ -188,6 +177,10 @@
             </div>
             <div class="clock" id="whiteClock">10:00</div>
             <div class="captured" id="whiteCaptured"></div>
+            <div class="player-info">
+              <span class="label">Pet:</span>
+              <span id="whitePetDisplay">None</span>
+            </div>
           </section>
 
           <section class="board-wrapper">
@@ -212,11 +205,14 @@
           <div class="move-log" id="moveLog"></div>
         </section>
       </section>
+
+      <div class="reward-popup-container" id="rewardPopupContainer"></div>
     </div>
   </div>
 
   <script src="reading_progress.js"></script>
   <script src="auth.js"></script>
+  <script src="rewards.js"></script>
   <script src="reading_app.js"></script>
   <script src="script.js"></script>
 </body>

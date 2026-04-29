@@ -1,5 +1,5 @@
 // script.js
-// Full chess logic: board, moves, simple engine, timers.
+// Chess board, moves, simple engine, timers, sounds, captured display, castling, rewards.
 // Requires auth.js globals: currentUser, allowPlay, statusElement.
 
 const boardElement = document.getElementById("board");
@@ -8,33 +8,28 @@ const ranksElement = document.getElementById("ranks");
 const moveLogElement = document.getElementById("moveLog");
 const whiteClockElement = document.getElementById("whiteClock");
 const blackClockElement = document.getElementById("blackClock");
-
-// Sound effects
-const clickSound = new Audio("sounds/sounds-click.mpeg");
-const moveSound = new Audio("sounds/sounds-move.mpeg");
-
-// Optional buttons
-// <button id="newGameBtn">New Game</button>
-// <button id="flipBoardBtn">Flip Board</button>
+const whiteCapturedElement = document.getElementById("whiteCaptured");
+const blackCapturedElement = document.getElementById("blackCaptured");
 const newGameBtn = document.getElementById("newGameBtn");
 const flipBoardBtn = document.getElementById("flipBoardBtn");
 
-const FILES = ["a","b","c","d","e","f","g","h"];
-const RANKS = ["1","2","3","4","5","6","7","8"];
+//Sound effects
+const clickSound = new Audio("sounds/sounds-click.mpeg");
+const moveSound = new Audio("sounds/sounds-move.mpeg");
+
+
+function playSound(audio) {
+  if (!audio) return;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+}
+
+const FILES = ["a", "b", "c", "d", "e", "f", "g", "h"];
+const RANKS = ["1", "2", "3", "4", "5", "6", "7", "8"];
 
 const PIECE_UNICODE = {
-  "P": "\u2659",
-  "N": "\u2658",
-  "B": "\u2657",
-  "R": "\u2656",
-  "Q": "\u2655",
-  "K": "\u2654",
-  "p": "\u265F",
-  "n": "\u265E",
-  "b": "\u265D",
-  "r": "\u265C",
-  "q": "\u265B",
-  "k": "\u265A"
+  P: "\u2659", N: "\u2658", B: "\u2657", R: "\u2656", Q: "\u2655", K: "\u2654",
+  p: "\u265F", n: "\u265E", b: "\u265D", r: "\u265C", q: "\u265B", k: "\u265A"
 };
 
 let board = [];
@@ -48,7 +43,6 @@ let whiteCanCastleKing = true;
 let whiteCanCastleQueen = true;
 let blackCanCastleKing = true;
 let blackCanCastleQueen = true;
-let enPassantTarget = null;
 
 let whiteTime = 10 * 60;
 let blackTime = 10 * 60;
@@ -56,7 +50,8 @@ let timerInterval = null;
 
 const vsComputer = true;
 
-// Helpers
+let whiteCapturedPieces = [];
+let blackCapturedPieces = [];
 
 function indexToCoord(index) {
   const file = index % 8;
@@ -84,15 +79,9 @@ function isWhite(piece) {
   return piece && piece === piece.toUpperCase();
 }
 
-function isBlack(piece) {
-  return piece && piece === piece.toLowerCase();
-}
-
 function cloneBoard(srcBoard) {
   return srcBoard.slice();
 }
-
-// Timers
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -132,19 +121,14 @@ function stopTimer() {
   timerInterval = null;
 }
 
-// Setup
-
 function resetBoard() {
   board = new Array(64).fill(null);
-  const backRankWhite = ["R","N","B","Q","K","B","N","R"];
-  const backRankBlack = ["r","n","b","q","k","b","n","r"];
+  const backRankWhite = ["R", "N", "B", "Q", "K", "B", "N", "R"];
+  const backRankBlack = ["r", "n", "b", "q", "k", "b", "n", "r"];
 
   for (let f = 0; f < 8; f++) {
     setPiece(coordToIndex(f, 0), backRankWhite[f]);
     setPiece(coordToIndex(f, 1), "P");
-  }
-
-  for (let f = 0; f < 8; f++) {
     setPiece(coordToIndex(f, 7), backRankBlack[f]);
     setPiece(coordToIndex(f, 6), "p");
   }
@@ -159,43 +143,41 @@ function resetBoard() {
   whiteCanCastleQueen = true;
   blackCanCastleKing = true;
   blackCanCastleQueen = true;
-  enPassantTarget = null;
 
   whiteTime = 10 * 60;
   blackTime = 10 * 60;
+
+  whiteCapturedPieces = [];
+  blackCapturedPieces = [];
+
   stopTimer();
   startTimer();
   updateClocks();
-
   renderBoard();
   renderMoveLog();
+  renderCaptured();
   updateStatus();
-}
+  playSound(startSound);
 
-// Move generation
+  if (typeof renderRewardsUI === "function") renderRewardsUI();
+}
 
 function isSquareAttackedByColor(boardState, targetIndex, attackerIsWhite) {
   const { file: tf, rank: tr } = indexToCoord(targetIndex);
 
   const pawnDir = attackerIsWhite ? 1 : -1;
-  const pawnRanks = [tr - pawnDir];
-  const pawnFiles = [tf - 1, tf + 1];
-  for (const pr of pawnRanks) {
-    for (const pf of pawnFiles) {
-      if (!inBounds(pf, pr)) continue;
-      const idx = coordToIndex(pf, pr);
-      const p = boardState[idx];
-      if (!p) continue;
-      if (attackerIsWhite && p === "P") return true;
-      if (!attackerIsWhite && p === "p") return true;
-    }
+  const pawnRank = tr - pawnDir;
+  for (const pf of [tf - 1, tf + 1]) {
+    if (!inBounds(pf, pawnRank)) continue;
+    const idx = coordToIndex(pf, pawnRank);
+    const p = boardState[idx];
+    if (!p) continue;
+    if (attackerIsWhite && p === "P") return true;
+    if (!attackerIsWhite && p === "p") return true;
   }
 
-  const knightOffsets = [
-    [1,2], [2,1], [2,-1], [1,-2],
-    [-1,-2], [-2,-1], [-2,1], [-1,2]
-  ];
-  for (const [df,dr] of knightOffsets) {
+  const knightOffsets = [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]];
+  for (const [df, dr] of knightOffsets) {
     const nf = tf + df;
     const nr = tr + dr;
     if (!inBounds(nf, nr)) continue;
@@ -207,7 +189,7 @@ function isSquareAttackedByColor(boardState, targetIndex, attackerIsWhite) {
   }
 
   const bishopDirs = [[1,1],[1,-1],[-1,1],[-1,-1]];
-  for (const [df,dr] of bishopDirs) {
+  for (const [df, dr] of bishopDirs) {
     let nf = tf + df;
     let nr = tr + dr;
     while (inBounds(nf, nr)) {
@@ -224,7 +206,7 @@ function isSquareAttackedByColor(boardState, targetIndex, attackerIsWhite) {
   }
 
   const rookDirs = [[1,0],[-1,0],[0,1],[0,-1]];
-  for (const [df,dr] of rookDirs) {
+  for (const [df, dr] of rookDirs) {
     let nf = tf + df;
     let nr = tr + dr;
     while (inBounds(nf, nr)) {
@@ -241,7 +223,7 @@ function isSquareAttackedByColor(boardState, targetIndex, attackerIsWhite) {
   }
 
   const kingOffsets = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-  for (const [df,dr] of kingOffsets) {
+  for (const [df, dr] of kingOffsets) {
     const nf = tf + df;
     const nr = tr + dr;
     if (!inBounds(nf, nr)) continue;
@@ -272,7 +254,6 @@ function isKingInCheck(boardState, isWhiteSide) {
 function addMoveIfLegal(moves, fromIndex, toIndex, promotion = null, special = null) {
   const trialBoard = cloneBoard(board);
   const movingPiece = trialBoard[fromIndex];
-  const captured = trialBoard[toIndex];
 
   trialBoard[fromIndex] = null;
   trialBoard[toIndex] = movingPiece;
@@ -281,10 +262,28 @@ function addMoveIfLegal(moves, fromIndex, toIndex, promotion = null, special = n
     trialBoard[toIndex] = promotion;
   }
 
-  // Castling rook move is handled outside this helper in king logic
+  if (special === "castleKing") {
+    if (movingPiece === "K") {
+      trialBoard[coordToIndex(7, 0)] = null;
+      trialBoard[coordToIndex(5, 0)] = "R";
+    } else if (movingPiece === "k") {
+      trialBoard[coordToIndex(7, 7)] = null;
+      trialBoard[coordToIndex(5, 7)] = "r";
+    }
+  }
+
+  if (special === "castleQueen") {
+    if (movingPiece === "K") {
+      trialBoard[coordToIndex(0, 0)] = null;
+      trialBoard[coordToIndex(3, 0)] = "R";
+    } else if (movingPiece === "k") {
+      trialBoard[coordToIndex(0, 7)] = null;
+      trialBoard[coordToIndex(3, 7)] = "r";
+    }
+  }
 
   if (!isKingInCheck(trialBoard, isWhite(movingPiece))) {
-    moves.push({ from: fromIndex, to: toIndex, promotion, special, captured });
+    moves.push({ from: fromIndex, to: toIndex, promotion, special });
   }
 }
 
@@ -305,15 +304,12 @@ function generateMovesForSquare(index) {
       const fIdx = coordToIndex(file, forwardRank);
       if (!getPiece(fIdx)) {
         if (forwardRank === promoRank) {
-          const promoPiece = whitePiece ? "Q" : "q";
-          addMoveIfLegal(moves, index, fIdx, promoPiece);
+          addMoveIfLegal(moves, index, fIdx, whitePiece ? "Q" : "q");
         } else {
           addMoveIfLegal(moves, index, fIdx);
         }
-
         if (rank === startRank) {
-          const twoRank = rank + 2 * dir;
-          const tIdx = coordToIndex(file, twoRank);
+          const tIdx = coordToIndex(file, rank + 2 * dir);
           if (!getPiece(tIdx)) {
             addMoveIfLegal(moves, index, tIdx);
           }
@@ -329,19 +325,15 @@ function generateMovesForSquare(index) {
       const target = getPiece(cIdx);
       if (target && isWhite(target) !== whitePiece) {
         if (cr === promoRank) {
-          const promoPiece = whitePiece ? "Q" : "q";
-          addMoveIfLegal(moves, index, cIdx, promoPiece);
+          addMoveIfLegal(moves, index, cIdx, whitePiece ? "Q" : "q");
         } else {
           addMoveIfLegal(moves, index, cIdx);
         }
       }
     }
   } else if (piece.toUpperCase() === "N") {
-    const offsets = [
-      [1,2],[2,1],[2,-1],[1,-2],
-      [-1,-2],[-2,-1],[-2,1],[-1,2]
-    ];
-    for (const [df,dr] of offsets) {
+    const offsets = [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]];
+    for (const [df, dr] of offsets) {
       const nf = file + df;
       const nr = rank + dr;
       if (!inBounds(nf, nr)) continue;
@@ -360,7 +352,7 @@ function generateMovesForSquare(index) {
       directions.push([1,0],[-1,0],[0,1],[0,-1]);
     }
 
-    for (const [df,dr] of directions) {
+    for (const [df, dr] of directions) {
       let nf = file + df;
       let nr = rank + dr;
       while (inBounds(nf, nr)) {
@@ -369,9 +361,7 @@ function generateMovesForSquare(index) {
         if (!target) {
           addMoveIfLegal(moves, index, idx);
         } else {
-          if (isWhite(target) !== whitePiece) {
-            addMoveIfLegal(moves, index, idx);
-          }
+          if (isWhite(target) !== whitePiece) addMoveIfLegal(moves, index, idx);
           break;
         }
         nf += df;
@@ -380,17 +370,72 @@ function generateMovesForSquare(index) {
     }
   } else if (piece.toUpperCase() === "K") {
     const kingOffsets = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
-    for (const [df,dr] of kingOffsets) {
+    for (const [df, dr] of kingOffsets) {
       const nf = file + df;
       const nr = rank + dr;
       if (!inBounds(nf, nr)) continue;
       const idx = coordToIndex(nf, nr);
-      const t = getPiece(idx);
-      if (!t || isWhite(t) !== whitePiece) {
+      const target = getPiece(idx);
+      if (!target || isWhite(target) !== whitePiece) {
         addMoveIfLegal(moves, index, idx);
       }
     }
-    // Castling – omitted for brevity; can be added similarly and checked with addMoveIfLegal.
+
+    if (whitePiece) {
+      if (
+        index === coordToIndex(4, 0) &&
+        whiteCanCastleKing &&
+        getPiece(coordToIndex(5, 0)) === null &&
+        getPiece(coordToIndex(6, 0)) === null &&
+        getPiece(coordToIndex(7, 0)) === "R" &&
+        !isKingInCheck(board, true) &&
+        !isSquareAttackedByColor(board, coordToIndex(5, 0), false) &&
+        !isSquareAttackedByColor(board, coordToIndex(6, 0), false)
+      ) {
+        addMoveIfLegal(moves, index, coordToIndex(6, 0), null, "castleKing");
+      }
+
+      if (
+        index === coordToIndex(4, 0) &&
+        whiteCanCastleQueen &&
+        getPiece(coordToIndex(1, 0)) === null &&
+        getPiece(coordToIndex(2, 0)) === null &&
+        getPiece(coordToIndex(3, 0)) === null &&
+        getPiece(coordToIndex(0, 0)) === "R" &&
+        !isKingInCheck(board, true) &&
+        !isSquareAttackedByColor(board, coordToIndex(3, 0), false) &&
+        !isSquareAttackedByColor(board, coordToIndex(2, 0), false)
+      ) {
+        addMoveIfLegal(moves, index, coordToIndex(2, 0), null, "castleQueen");
+      }
+    } else {
+      if (
+        index === coordToIndex(4, 7) &&
+        blackCanCastleKing &&
+        getPiece(coordToIndex(5, 7)) === null &&
+        getPiece(coordToIndex(6, 7)) === null &&
+        getPiece(coordToIndex(7, 7)) === "r" &&
+        !isKingInCheck(board, false) &&
+        !isSquareAttackedByColor(board, coordToIndex(5, 7), true) &&
+        !isSquareAttackedByColor(board, coordToIndex(6, 7), true)
+      ) {
+        addMoveIfLegal(moves, index, coordToIndex(6, 7), null, "castleKing");
+      }
+
+      if (
+        index === coordToIndex(4, 7) &&
+        blackCanCastleQueen &&
+        getPiece(coordToIndex(1, 7)) === null &&
+        getPiece(coordToIndex(2, 7)) === null &&
+        getPiece(coordToIndex(3, 7)) === null &&
+        getPiece(coordToIndex(0, 7)) === "r" &&
+        !isKingInCheck(board, false) &&
+        !isSquareAttackedByColor(board, coordToIndex(3, 7), true) &&
+        !isSquareAttackedByColor(board, coordToIndex(2, 7), true)
+      ) {
+        addMoveIfLegal(moves, index, coordToIndex(2, 7), null, "castleQueen");
+      }
+    }
   }
 
   return moves;
@@ -402,23 +447,51 @@ function generateLegalMoves(forWhite) {
     const p = getPiece(i);
     if (!p) continue;
     if (isWhite(p) !== forWhite) continue;
-    const pieceMoves = generateMovesForSquare(i);
-    moves.push(...pieceMoves);
+    moves.push(...generateMovesForSquare(i));
   }
   return moves;
 }
 
-// Making moves
+function renderCaptured() {
+  if (!whiteCapturedElement || !blackCapturedElement) return;
+
+  whiteCapturedElement.innerHTML = blackCapturedPieces.map(p => PIECE_UNICODE[p]).join(" ");
+  blackCapturedElement.innerHTML = whiteCapturedPieces.map(p => PIECE_UNICODE[p]).join(" ");
+}
 
 function makeMove(move) {
-  // Play move / landing sound
-  if (moveSound) {
-    moveSound.currentTime = 0;
-    moveSound.play().catch(() => {});
-  }
-
   const movingPiece = getPiece(move.from);
   const captured = getPiece(move.to);
+
+  if (captured) {
+    playSound(captureSound);
+  } else {
+    playSound(moveSound);
+  }
+
+  if (captured) {
+    if (isWhite(captured)) {
+      whiteCapturedPieces.push(captured);
+    } else {
+      blackCapturedPieces.push(captured);
+    }
+
+    if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function" && typeof addCoins === "function") {
+      if (markRewardMilestone("firstCapture")) {
+        unlockSticker("firstCapture");
+        addCoins(5);
+      }
+    }
+  }
+
+  if (captured === "R") {
+    if (move.to === coordToIndex(0, 0)) whiteCanCastleQueen = false;
+    if (move.to === coordToIndex(7, 0)) whiteCanCastleKing = false;
+  }
+  if (captured === "r") {
+    if (move.to === coordToIndex(0, 7)) blackCanCastleQueen = false;
+    if (move.to === coordToIndex(7, 7)) blackCanCastleKing = false;
+  }
 
   setPiece(move.from, null);
   setPiece(move.to, movingPiece);
@@ -427,14 +500,86 @@ function makeMove(move) {
     setPiece(move.to, move.promotion);
   }
 
+  if (move.special === "castleKing") {
+    if (movingPiece === "K") {
+      setPiece(coordToIndex(7, 0), null);
+      setPiece(coordToIndex(5, 0), "R");
+    } else if (movingPiece === "k") {
+      setPiece(coordToIndex(7, 7), null);
+      setPiece(coordToIndex(5, 7), "r");
+    }
+  }
+
+  if (move.special === "castleQueen") {
+    if (movingPiece === "K") {
+      setPiece(coordToIndex(0, 0), null);
+      setPiece(coordToIndex(3, 0), "R");
+    } else if (movingPiece === "k") {
+      setPiece(coordToIndex(0, 7), null);
+      setPiece(coordToIndex(3, 7), "r");
+    }
+  }
+
+  if (movingPiece === "K") {
+    whiteCanCastleKing = false;
+    whiteCanCastleQueen = false;
+  }
+  if (movingPiece === "k") {
+    blackCanCastleKing = false;
+    blackCanCastleQueen = false;
+  }
+  if (movingPiece === "R") {
+    if (move.from === coordToIndex(0, 0)) whiteCanCastleQueen = false;
+    if (move.from === coordToIndex(7, 0)) whiteCanCastleKing = false;
+  }
+  if (movingPiece === "r") {
+    if (move.from === coordToIndex(0, 7)) blackCanCastleQueen = false;
+    if (move.from === coordToIndex(7, 7)) blackCanCastleKing = false;
+  }
+
+  if (move.special === "castleKing" || move.special === "castleQueen") {
+    if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function" && typeof addCoins === "function") {
+      if (markRewardMilestone("firstCastle")) {
+        unlockSticker("firstCastle");
+        addCoins(5);
+      }
+    }
+  }
+
   moveHistory.push(move);
   whiteToMove = !whiteToMove;
 
   renderBoard();
   renderMoveLog();
+  renderCaptured();
   updateStatus();
 
+  const inCheckNow = isKingInCheck(board, whiteToMove);
+  if (inCheckNow) {
+    playSound(checkSound);
+    if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function" && typeof addCoins === "function") {
+      if (markRewardMilestone("firstCheck")) {
+        unlockSticker("firstCheck");
+        addCoins(5);
+      }
+    }
+  }
+
+  const nextMoves = generateLegalMoves(whiteToMove);
+  if (nextMoves.length === 0) {
+    const sideInCheck = isKingInCheck(board, whiteToMove);
+    if (sideInCheck && !whiteToMove) {
+      if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function" && typeof addCoins === "function") {
+        if (markRewardMilestone("firstWin")) {
+          unlockSticker("firstWin");
+          addCoins(15);
+        }
+      }
+    }
+  }
+
   if (!timerInterval) startTimer();
+  if (typeof renderRewardsUI === "function") renderRewardsUI();
 
   if (vsComputer && !whiteToMove) {
     setTimeout(makeComputerMove, 500);
@@ -447,8 +592,6 @@ function makeComputerMove() {
   const randomMove = moves[Math.floor(Math.random() * moves.length)];
   makeMove(randomMove);
 }
-
-// Rendering
 
 function renderBoard() {
   boardElement.innerHTML = "";
@@ -470,19 +613,14 @@ function renderBoard() {
       const displayFile = flipped ? 7 - file : file;
       const displayRank = flipped ? 7 - rank : rank;
       const index = coordToIndex(displayFile, displayRank);
+
       const square = document.createElement("div");
       square.classList.add("square");
-      const isLight = (file + rank) % 2 === 0;
-      square.classList.add(isLight ? "light" : "dark");
+      square.classList.add((file + rank) % 2 === 0 ? "light" : "dark");
       square.dataset.index = index;
 
-      if (selectedSquare === index) {
-        square.classList.add("selected");
-      }
-
-      if (legalMoves.some(m => m.to === index)) {
-        square.classList.add("highlight");
-      }
+      if (selectedSquare === index) square.classList.add("selected");
+      if (legalMoves.some(m => m.to === index)) square.classList.add("highlight");
 
       const piece = getPiece(index);
       if (piece) {
@@ -529,17 +667,20 @@ function renderMoveLog() {
 }
 
 function formatMove(move) {
+  if (!move) return "";
+  if (move.special === "castleKing") return "O-O";
+  if (move.special === "castleQueen") return "O-O-O";
+
   const from = indexToCoord(move.from);
   const to = indexToCoord(move.to);
-  const fromStr = FILES[from.file] + RANKS[from.rank];
-  const toStr = FILES[to.file] + RANKS[to.rank];
-  return fromStr + "-" + toStr;
+  return FILES[from.file] + RANKS[from.rank] + "-" + FILES[to.file] + RANKS[to.rank];
 }
 
 function updateStatus() {
   const forWhite = whiteToMove;
   const moves = generateLegalMoves(forWhite);
   const inCheck = isKingInCheck(board, forWhite);
+
   if (moves.length === 0) {
     if (inCheck) {
       if (statusElement) statusElement.textContent = (forWhite ? "White" : "Black") + " is checkmated.";
@@ -555,14 +696,8 @@ function updateStatus() {
   }
 }
 
-// Input
-
 function onSquareClick(e) {
-  // Play basic click on any board tap
-  if (clickSound) {
-    clickSound.currentTime = 0;
-    clickSound.play().catch(() => {});
-  }
+  playSound(clickSound);
 
   if (!currentUser || (currentUser.role === "child" && !allowPlay)) {
     if (statusElement) statusElement.textContent = "Play blocked by parental controls.";
@@ -600,6 +735,8 @@ function onSquareClick(e) {
     return;
   }
 
+  if (vsComputer && !whiteToMove) return;
+
   selectedSquare = index;
   legalMoves = generateMovesForSquare(index);
   renderBoard();
@@ -610,18 +747,11 @@ function flipBoard() {
   renderBoard();
 }
 
-// Event wiring
-
 boardElement.addEventListener("click", onSquareClick);
 
-if (newGameBtn) {
-  newGameBtn.addEventListener("click", resetBoard);
-}
-if (flipBoardBtn) {
-  flipBoardBtn.addEventListener("click", flipBoard);
-}
+if (newGameBtn) newGameBtn.addEventListener("click", resetBoard);
+if (flipBoardBtn) flipBoardBtn.addEventListener("click", flipBoard);
 
-// Auto-start for allowed users
 if (currentUser && (currentUser.role === "parent" || allowPlay)) {
   resetBoard();
 }
