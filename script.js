@@ -13,7 +13,7 @@ const blackClockElement = document.getElementById("blackClock");
 const clickSound = new Audio("sounds/sounds-click.mpeg");
 const moveSound = new Audio("sounds/sounds-move.mpeg");
 
-// Optional buttons (add to HTML header if you want)
+// Optional buttons
 // <button id="newGameBtn">New Game</button>
 // <button id="flipBoardBtn">Flip Board</button>
 const newGameBtn = document.getElementById("newGameBtn");
