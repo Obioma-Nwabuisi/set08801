@@ -10,8 +10,8 @@ const whiteClockElement = document.getElementById("whiteClock");
 const blackClockElement = document.getElementById("blackClock");
 
 // Sound effects
-const clickSound = new Audio("sounds-click.mpeg");
-const moveSound = new Audio("sounds-move.mpeg");
+const clickSound = new Audio("sounds/sounds-click.mpeg");
+const moveSound = new Audio("sounds/sounds-move.mpeg");
 
 // Optional buttons (add to HTML header if you want)
 // <button id="newGameBtn">New Game</button>
