@@ -12,11 +12,12 @@ const blackCapturedElement = document.getElementById("blackCaptured");
 const newGameBtn = document.getElementById("newGameBtn");
 const flipBoardBtn = document.getElementById("flipBoardBtn");
 
-const clickSound = new Audio("sounds/click.mp3");
-const moveSound = new Audio("sounds/move.mp3");
-const captureSound = new Audio("sounds/capture.mp3");
-const checkSound = new Audio("sounds/check.mp3");
-const startSound = new Audio("sounds/start.mp3");
+// Sound effects
+const clickSound = new Audio("sounds/sounds-click.mpeg");
+const moveSound = new Audio("sounds/sounds-move.mpeg");
+const captureSound = new Audio("sounds/sounds-capture.mpeg");
+const checkSound = new Audio("sounds/sounds-check.mpeg");
+const startSound = new Audio("sounds/sounds-start.mpeg");
 
 function playSound(audio) {
   if (!audio) return;
