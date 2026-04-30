@@ -15,7 +15,7 @@ A self-contained static web app that combines reading activities, quiz-based pro
 ## Files
 
 - `index.html` — main app entry point
-- `style.css` — app styling
+- `styles.css` — app styling
 - `auth.js` — demo login, session state, parental controls
 - `reading_progress.js` — story completion and chess unlock logic
 - `access.js` — free vs premium subscription logic
@@ -28,11 +28,11 @@ A self-contained static web app that combines reading activities, quiz-based pro
 
 The chess script references these files:
 
-- `sounds/click.mp3`
-- `sounds/move.mp3`
-- `sounds/capture.mp3`
-- `sounds/check.mp3`
-- `sounds/start.mp3`
+- `sounds/sounds-click.mpeg`
+- `sounds/sounds-move.mpeg`
+- `sounds/souns-capture.mpeg`
+- `sounds/sounds-check.mpeg`
+- `sounds/sounds-start.mpeg`
 
 If you do not add them, the app should still run, but the browser may log missing audio requests.
 
@@ -73,7 +73,7 @@ The app stores state in browser `localStorage` using JSON strings.
 ```text
 reading-adventure-bundle/
 ├── index.html
-├── style.css
+├── styles.css
 ├── auth.js
 ├── reading_progress.js
 ├── access.js
