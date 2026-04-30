@@ -34,7 +34,7 @@ The chess script references these files:
 - `sounds/sounds-check.mpeg`
 - `sounds/sounds-start.mpeg`
 
-If you do not add them, the app should still run, but the browser may log missing audio requests.
+If they are not added, the app should still run, but the browser may log missing audio requests.
 
 ## Demo login
 
