@@ -27,9 +27,7 @@
           </select>
         </div>
         <button type="submit">Login</button>
-        <p class="login-note">
-          Demo passwords: parent = <strong>parent123</strong>, child = anything.
-        </p>
+        <p class="login-note">Demo passwords: parent = <strong>parent123</strong>, child = anything.</p>
         <p class="login-error" id="loginError"></p>
       </form>
     </section>
@@ -48,50 +46,51 @@
       <main class="main-layout" id="worldMap">
         <section class="side-panel">
           <h2>Your Profile</h2>
-          <div class="player-info">
-            <span class="label">Level:</span>
-            <span id="profileLevel">Not set</span>
-          </div>
-          <div class="player-info">
-            <span class="label">Stories done:</span>
-            <span id="storiesDone">0</span>
-          </div>
-          <div class="player-info">
-            <span class="label">Coins:</span>
-            <span id="coinsCount">0</span>
-          </div>
-          <div class="player-info">
-            <span class="label">Active pet:</span>
-            <span id="activePetLabel">None</span>
-          </div>
+          <div class="player-info"><span class="label">Level:</span><span id="profileLevel">Not set</span></div>
+          <div class="player-info"><span class="label">Stories done:</span><span id="storiesDone">0</span></div>
+          <div class="player-info"><span class="label">Coins:</span><span id="coinsCount">0</span></div>
+          <div class="player-info"><span class="label">Plan:</span><span id="planBadge">Free</span></div>
+          <div class="player-info"><span class="label">Active pet:</span><span id="activePetLabel">None</span></div>
           <div class="pet-preview" id="activePetPreview">🐾</div>
+
+          <div class="subscription-panel">
+            <h3>Subscription</h3>
+            <div class="plan-buttons">
+              <button class="plan-btn" data-plan="free">Free</button>
+              <button class="plan-btn" data-plan="monthly">Monthly</button>
+              <button class="plan-btn" data-plan="yearly">Yearly</button>
+              <button class="plan-btn" data-plan="family">Family</button>
+              <button class="plan-btn" data-plan="classroom">Classroom</button>
+            </div>
+            <p class="subscription-note">Free includes core stories and basic features. Paid plans unlock premium worlds, advanced mini-games, and extra personalization.</p>
+          </div>
         </section>
 
         <section class="board-wrapper">
           <div class="world-grid">
             <article class="world-card" data-world="pirateCove">
-              <h3>Pirate Cove</h3>
+              <div class="world-card-top"><h3>Pirate Cove</h3><span class="world-tier free-tier">Free</span></div>
               <p>Easy story adventure on the high seas.</p>
               <button class="start-story-btn" data-world="pirateCove" data-chapter="ch1">Start Chapter 1</button>
               <div class="world-progress">Completed: <span id="worldPirateProgress">0</span>%</div>
             </article>
 
-            <article class="world-card" data-world="enchantedForest">
-              <h3>Enchanted Forest</h3>
+            <article class="world-card premium-world" data-world="enchantedForest">
+              <div class="world-card-top"><h3>Enchanted Forest</h3><span class="world-tier premium-tier">Premium</span></div>
               <p>Meet talking animals and glowing trees.</p>
               <button class="start-story-btn" data-world="enchantedForest" data-chapter="ch1">Start Chapter 1</button>
               <div class="world-progress">Completed: <span id="worldEnchantedProgress">0</span>%</div>
             </article>
 
-            <article class="world-card" data-world="spaceStation">
-              <h3>Space Station</h3>
+            <article class="world-card premium-world" data-world="spaceStation">
+              <div class="world-card-top"><h3>Space Station</h3><span class="world-tier premium-tier">Premium</span></div>
               <p>Help young astronauts fix a space station.</p>
               <button class="start-story-btn" data-world="spaceStation" data-chapter="ch1">Start Chapter 1</button>
               <div class="world-progress">Completed: <span id="worldSpaceProgress">0</span>%</div>
             </article>
 
-            <article class="world-card" data-world="underwaterCity">
-              <h3>Underwater City</h3>
+            <article class="world-card premium-world" data-world="underwaterCity">
+              <div class="world-card-top"><h3>Underwater City</h3><span class="world-tier premium-tier">Premium</span></div>
               <p>Explore a city of friendly sea creatures.</p>
               <button class="start-story-btn" data-world="underwaterCity" data-chapter="ch1">Start Chapter 1</button>
               <div class="world-progress">Completed: <span id="worldUnderwaterProgress">0</span>%</div>
@@ -101,10 +100,7 @@
 
         <section class="side-panel">
           <h2>Rewards</h2>
-          <div class="player-info">
-            <span class="label">Stickers:</span>
-            <span id="stickersCount">0</span>
-          </div>
+          <div class="player-info"><span class="label">Stickers:</span><span id="stickersCount">0</span></div>
           <div class="stickers-grid" id="stickersGrid"></div>
 
           <h3 style="margin-top: 0.8rem;">Pet Shop</h3>
@@ -140,10 +136,17 @@
               <h3>Chess Adventure</h3>
               <span class="lock-label" id="chessLockLabel">Locked</span>
             </div>
-            <p class="game-card-text" id="chessCardText">
-              Finish a story and pass its quiz to unlock this game.
-            </p>
+            <p class="game-card-text" id="chessCardText">Finish a story and pass its quiz to unlock this game.</p>
             <button id="playChessBtn" disabled>Play Chess</button>
+          </article>
+
+          <article class="game-card premium-feature-card" id="advancedGamesCard">
+            <div class="game-card-header">
+              <h3>Advanced Mini-Games</h3>
+              <span class="lock-label" id="advancedGamesLockLabel">Premium</span>
+            </div>
+            <p class="game-card-text" id="advancedGamesCardText">Premium plans unlock extra mini-games and personalization.</p>
+            <button id="advancedGamesBtn" disabled>Premium Only</button>
           </article>
         </div>
         <button class="back-btn" id="backFromGamesBtn">Back to Stories</button>
@@ -155,9 +158,7 @@
           <input type="checkbox" id="allowPlayToggle" />
           <span>Allow child to play games</span>
         </label>
-        <p class="parent-note">
-          When disabled, the games hub and chess are hidden for child accounts.
-        </p>
+        <p class="parent-note">When disabled, the games hub and chess are hidden for child accounts.</p>
       </section>
 
       <section class="chess-wrapper" id="chessWrapper" style="display:none;">
@@ -171,16 +172,10 @@
         <main class="main-layout">
           <section class="side-panel" id="whitePanel">
             <h2>White</h2>
-            <div class="player-info" id="whiteInfo">
-              <span class="label">Player:</span>
-              <span id="whiteName">You</span>
-            </div>
+            <div class="player-info" id="whiteInfo"><span class="label">Player:</span><span id="whiteName">You</span></div>
             <div class="clock" id="whiteClock">10:00</div>
             <div class="captured" id="whiteCaptured"></div>
-            <div class="player-info">
-              <span class="label">Pet:</span>
-              <span id="whitePetDisplay">None</span>
-            </div>
+            <div class="player-info"><span class="label">Pet:</span><span id="whitePetDisplay">None</span></div>
           </section>
 
           <section class="board-wrapper">
@@ -191,10 +186,7 @@
 
           <section class="side-panel" id="blackPanel">
             <h2>Black</h2>
-            <div class="player-info" id="blackInfo">
-              <span class="label">Player:</span>
-              <span id="blackName">Computer</span>
-            </div>
+            <div class="player-info" id="blackInfo"><span class="label">Player:</span><span id="blackName">Computer</span></div>
             <div class="clock" id="blackClock">10:00</div>
             <div class="captured" id="blackCaptured"></div>
           </section>
@@ -212,6 +204,7 @@
 
   <script src="reading_progress.js"></script>
   <script src="auth.js"></script>
+  <script src="access.js"></script>
   <script src="rewards.js"></script>
   <script src="reading_app.js"></script>
   <script src="script.js"></script>

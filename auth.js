@@ -1,134 +1,159 @@
 // auth.js
-// Handles login, logout, parental controls, and app visibility.
+// Simple browser-only auth and parental controls for the Reading Adventure bundle.
 
-const loginPanel = document.getElementById("loginPanel");
-const loginForm = document.getElementById("loginForm");
-const loginError = document.getElementById("loginError");
-const appInner = document.getElementById("appInner");
-const currentUserLabel = document.getElementById("currentUserLabel");
-const logoutBtn = document.getElementById("logoutBtn");
-const parentPanel = document.getElementById("parentPanel");
-const allowPlayToggle = document.getElementById("allowPlayToggle");
-const statusElement = document.getElementById("status");
-
-const STORAGE_KEY_USER = "chess_user";
-const STORAGE_KEY_ALLOW = "chess_allow_play";
+const AUTH_STORAGE_KEY = "reading_app_auth";
+const ALLOW_PLAY_STORAGE_KEY = "reading_app_allow_play";
 
 let currentUser = null;
 let allowPlay = true;
+let statusElement = null;
 
-function saveUserToStorage() {
-  if (currentUser) {
-    localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(currentUser));
-  } else {
-    localStorage.removeItem(STORAGE_KEY_USER);
-  }
-  localStorage.setItem(STORAGE_KEY_ALLOW, allowPlay ? "1" : "0");
+function getDefaultAuthState() {
+  return {
+    currentUser: null
+  };
 }
 
-function loadUserFromStorage() {
-  const userStr = localStorage.getItem(STORAGE_KEY_USER);
-  const allowStr = localStorage.getItem(STORAGE_KEY_ALLOW);
+function saveAuthState(state) {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(state));
+}
 
-  if (userStr) {
-    try {
-      currentUser = JSON.parse(userStr);
-    } catch (e) {
-      currentUser = null;
+function loadAuthState() {
+  const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) {
+    const initial = getDefaultAuthState();
+    saveAuthState(initial);
+    return initial;
+  }
+
+  try {
+    return { ...getDefaultAuthState(), ...JSON.parse(raw) };
+  } catch (error) {
+    const initial = getDefaultAuthState();
+    saveAuthState(initial);
+    return initial;
+  }
+}
+
+function saveAllowPlay(value) {
+  localStorage.setItem(ALLOW_PLAY_STORAGE_KEY, JSON.stringify(Boolean(value)));
+}
+
+function loadAllowPlay() {
+  const raw = localStorage.getItem(ALLOW_PLAY_STORAGE_KEY);
+  if (raw === null) {
+    saveAllowPlay(true);
+    return true;
+  }
+  try {
+    return Boolean(JSON.parse(raw));
+  } catch (error) {
+    saveAllowPlay(true);
+    return true;
+  }
+}
+
+function setCurrentUser(user) {
+  currentUser = user;
+  saveAuthState({ currentUser: user });
+}
+
+function clearCurrentUser() {
+  currentUser = null;
+  saveAuthState({ currentUser: null });
+}
+
+function updateAuthUI() {
+  const loginPanel = document.getElementById("loginPanel");
+  const appInner = document.getElementById("appInner");
+  const currentUserLabel = document.getElementById("currentUserLabel");
+  const parentPanel = document.getElementById("parentPanel");
+  const allowPlayToggle = document.getElementById("allowPlayToggle");
+  const toGamesHubBtn = document.getElementById("toGamesHubBtn");
+  const profileLevel = document.getElementById("profileLevel");
+
+  allowPlay = loadAllowPlay();
+  if (allowPlayToggle) allowPlayToggle.checked = allowPlay;
+
+  if (currentUser) {
+    if (loginPanel) loginPanel.style.display = "none";
+    if (appInner) appInner.style.display = "block";
+    if (currentUserLabel) currentUserLabel.textContent = `${currentUser.username} (${currentUser.role})`;
+    if (profileLevel) profileLevel.textContent = currentUser.role === "parent" ? "Parent" : "Reader";
+
+    if (parentPanel) {
+      parentPanel.style.display = currentUser.role === "parent" ? "block" : "none";
+    }
+
+    if (toGamesHubBtn) {
+      if (currentUser.role === "child" && !allowPlay) {
+        toGamesHubBtn.disabled = true;
+      } else {
+        toGamesHubBtn.disabled = false;
+      }
+    }
+
+    if (typeof showWorldMap === "function") {
+      showWorldMap();
     }
   } else {
-    currentUser = null;
+    if (loginPanel) loginPanel.style.display = "block";
+    if (appInner) appInner.style.display = "none";
   }
-
-  allowPlay = allowStr !== "0";
 }
 
-function applyUserStateToUI() {
-  if (!currentUser) {
-    loginPanel.style.display = "block";
-    appInner.style.display = "none";
-    return;
-  }
+function handleLogin(event) {
+  event.preventDefault();
 
-  loginPanel.style.display = "none";
-  appInner.style.display = "block";
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const role = document.getElementById("role").value;
+  const loginError = document.getElementById("loginError");
 
-  currentUserLabel.textContent = currentUser.username + " (" + currentUser.role + ")";
-
-  if (currentUser.role === "parent") {
-    parentPanel.style.display = "block";
-  } else {
-    parentPanel.style.display = "none";
-  }
-
-  const mainLayout = document.getElementById("worldMap");
-  const gamesHub = document.getElementById("gamesHub");
-  const chessWrapper = document.getElementById("chessWrapper");
-
-  if (currentUser.role === "child" && !allowPlay) {
-    if (mainLayout) mainLayout.style.display = "block";
-    if (gamesHub) gamesHub.style.display = "none";
-    if (chessWrapper) chessWrapper.style.display = "none";
-    if (statusElement) statusElement.textContent = "Play blocked by parental controls.";
-  }
-
-  allowPlayToggle.checked = allowPlay;
-}
-
-loginForm.addEventListener("submit", function (e) {
-  e.preventDefault();
-
-  const username = loginForm.username.value.trim();
-  const password = loginForm.password.value;
-  const role = loginForm.role.value;
-
-  loginError.textContent = "";
-
-  if (!username || !password) {
-    loginError.textContent = "Please enter username and password.";
+  if (!username) {
+    if (loginError) loginError.textContent = "Enter a username.";
     return;
   }
 
   if (role === "parent" && password !== "parent123") {
-    loginError.textContent = "Invalid parent password.";
+    if (loginError) loginError.textContent = "Parent password is incorrect.";
     return;
   }
 
-  currentUser = { username, role };
-  saveUserToStorage();
-  applyUserStateToUI();
+  if (loginError) loginError.textContent = "";
 
-  if (typeof resetBoard === "function") {
-    if (role === "child" && !allowPlay) {
-      if (typeof stopTimer === "function") stopTimer();
-    } else {
-      resetBoard();
-    }
+  setCurrentUser({ username, role });
+  updateAuthUI();
+}
+
+function handleLogout() {
+  clearCurrentUser();
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
   }
-});
+  updateAuthUI();
+}
 
-logoutBtn.addEventListener("click", function () {
-  currentUser = null;
-  saveUserToStorage();
-  applyUserStateToUI();
-  if (typeof stopTimer === "function") {
-    stopTimer();
+document.addEventListener("DOMContentLoaded", () => {
+  statusElement = document.getElementById("status");
+
+  const authState = loadAuthState();
+  currentUser = authState.currentUser;
+  allowPlay = loadAllowPlay();
+
+  const loginForm = document.getElementById("loginForm");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const allowPlayToggle = document.getElementById("allowPlayToggle");
+
+  if (loginForm) loginForm.addEventListener("submit", handleLogin);
+  if (logoutBtn) logoutBtn.addEventListener("click", handleLogout);
+  if (allowPlayToggle) {
+    allowPlayToggle.addEventListener("change", (event) => {
+      saveAllowPlay(event.target.checked);
+      allowPlay = event.target.checked;
+      updateAuthUI();
+    });
   }
+
+  updateAuthUI();
 });
-
-allowPlayToggle.addEventListener("change", function () {
-  allowPlay = allowPlayToggle.checked;
-  saveUserToStorage();
-  applyUserStateToUI();
-
-  if (currentUser && currentUser.role === "child") {
-    if (!allowPlay) {
-      if (typeof stopTimer === "function") stopTimer();
-    } else {
-      if (typeof resetBoard === "function") resetBoard();
-    }
-  }
-});
-
-loadUserFromStorage();
-applyUserStateToUI();

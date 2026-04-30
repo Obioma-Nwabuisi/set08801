@@ -1,102 +1,105 @@
 // reading_progress.js
-// Simple client-side module to track reading progress and game unlocks.
+// Story completion and chess unlock persistence.
 
-const RP_STORAGE_KEY = "reading_progress";
+const READING_PROGRESS_STORAGE_KEY = "reading_app_progress";
 
-function loadReadingProgress() {
-  const raw = localStorage.getItem(RP_STORAGE_KEY);
-  if (!raw) {
-    const initial = {
-      profile: { level: "Not set" },
-      worlds: {
-        pirateCove: {
-          chapters: {
-            ch1: { completed: false, quizScore: 0 }
-          }
-        },
-        enchantedForest: {
-          chapters: {
-            ch1: { completed: false, quizScore: 0 }
-          }
-        },
-        spaceStation: {
-          chapters: {
-            ch1: { completed: false, quizScore: 0 }
-          }
-        },
-        underwaterCity: {
-          chapters: {
-            ch1: { completed: false, quizScore: 0 }
-          }
-        }
-      },
-      gamesUnlocked: {
-        chess: false
-      }
-    };
-    localStorage.setItem(RP_STORAGE_KEY, JSON.stringify(initial));
-    return initial;
-  }
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    localStorage.removeItem(RP_STORAGE_KEY);
-    return loadReadingProgress();
-  }
+const STORY_WORLDS = {
+  pirateCove: ["ch1"],
+  enchantedForest: ["ch1"],
+  spaceStation: ["ch1"],
+  underwaterCity: ["ch1"]
+};
+
+function getDefaultReadingProgress() {
+  return {
+    completed: {
+      pirateCove: {},
+      enchantedForest: {},
+      spaceStation: {},
+      underwaterCity: {}
+    },
+    totalStoriesDone: 0,
+    chessUnlocked: false
+  };
 }
 
 function saveReadingProgress(state) {
-  localStorage.setItem(RP_STORAGE_KEY, JSON.stringify(state));
+  localStorage.setItem(READING_PROGRESS_STORAGE_KEY, JSON.stringify(state));
 }
 
-function markChapterComplete(worldId, chapterId, quizScore) {
-  const state = loadReadingProgress();
-  if (!state.worlds[worldId]) state.worlds[worldId] = { chapters: {} };
-  if (!state.worlds[worldId].chapters[chapterId]) {
-    state.worlds[worldId].chapters[chapterId] = { completed: false, quizScore: 0 };
+function loadReadingProgress() {
+  const raw = localStorage.getItem(READING_PROGRESS_STORAGE_KEY);
+  if (!raw) {
+    const initial = getDefaultReadingProgress();
+    saveReadingProgress(initial);
+    return initial;
   }
 
-  state.worlds[worldId].chapters[chapterId].completed = true;
-  state.worlds[worldId].chapters[chapterId].quizScore = quizScore;
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      ...getDefaultReadingProgress(),
+      ...parsed,
+      completed: {
+        ...getDefaultReadingProgress().completed,
+        ...(parsed.completed || {})
+      }
+    };
+  } catch (error) {
+    const initial = getDefaultReadingProgress();
+    saveReadingProgress(initial);
+    return initial;
+  }
+}
 
-  unlockChessIfEligible(state);
+function markChapterComplete(worldId, chapterId, score = 1) {
+  const state = loadReadingProgress();
+
+  if (!state.completed[worldId]) {
+    state.completed[worldId] = {};
+  }
+
+  const firstTime = !state.completed[worldId][chapterId];
+  state.completed[worldId][chapterId] = {
+    done: true,
+    score,
+    completedAt: new Date().toISOString()
+  };
+
+  if (firstTime) {
+    state.totalStoriesDone += 1;
+  }
+
+  if (state.totalStoriesDone >= 1) {
+    state.chessUnlocked = true;
+  }
+
   saveReadingProgress(state);
-  return state;
-}
-
-function unlockChessIfEligible(state) {
-  // Unlock chess if any chapter in any world has a passing score (>=1)
-  for (const worldId of Object.keys(state.worlds)) {
-    const world = state.worlds[worldId];
-    const chapters = Object.values(world.chapters);
-    if (chapters.some(ch => ch.completed && ch.quizScore >= 1)) {
-      state.gamesUnlocked.chess = true;
-      return;
-    }
-  }
-}
-
-function getChessUnlocked() {
-  const state = loadReadingProgress();
-  return state.gamesUnlocked.chess === true;
 }
 
 function getWorldCompletionPercent(worldId) {
   const state = loadReadingProgress();
-  const world = state.worlds[worldId];
-  if (!world) return 0;
-  const chapters = Object.values(world.chapters);
+  const chapters = STORY_WORLDS[worldId] || [];
   if (chapters.length === 0) return 0;
-  const done = chapters.filter(c => c.completed).length;
-  return Math.round((done / chapters.length) * 100);
+
+  let doneCount = 0;
+  chapters.forEach(chapterId => {
+    if (state.completed[worldId] && state.completed[worldId][chapterId]?.done) {
+      doneCount += 1;
+    }
+  });
+
+  return Math.round((doneCount / chapters.length) * 100);
 }
 
 function getTotalStoriesDone() {
-  const state = loadReadingProgress();
-  let total = 0;
-  for (const worldId of Object.keys(state.worlds)) {
-    const world = state.worlds[worldId];
-    total += Object.values(world.chapters).filter(c => c.completed).length;
-  }
-  return total;
+  return loadReadingProgress().totalStoriesDone;
+}
+
+function getChessUnlocked() {
+  return loadReadingProgress().chessUnlocked;
+}
+
+function resetReadingProgress() {
+  saveReadingProgress(getDefaultReadingProgress());
 }

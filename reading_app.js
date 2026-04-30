@@ -1,5 +1,4 @@
 // reading_app.js
-// Handles world map, story display, quiz, and game hub unlock wiring.
 
 const worldMap = document.getElementById("worldMap");
 const storySection = document.getElementById("storySection");
@@ -113,10 +112,18 @@ function showWorldMap() {
 
   storiesDoneEl.textContent = String(getTotalStoriesDone());
   updateGameUnlocks();
+  if (typeof renderAccessUI === "function") renderAccessUI();
   if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
 function showStory(worldId, chapterId) {
+  if (typeof canAccessWorld === "function" && !canAccessWorld(worldId)) {
+    quizFeedbackEl.textContent = "This story world is for premium plans.";
+    if (typeof showRewardPopup === "function") showRewardPopup("Upgrade for premium worlds");
+    showWorldMap();
+    return;
+  }
+
   currentWorldId = worldId;
   currentChapterId = chapterId;
 
@@ -138,6 +145,7 @@ function showGamesHub() {
   chessWrapper.style.display = "none";
   gamesHub.style.display = "block";
   updateGameUnlocks();
+  if (typeof renderAccessUI === "function") renderAccessUI();
   if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
@@ -147,12 +155,8 @@ function showChess() {
   gamesHub.style.display = "none";
   chessWrapper.style.display = "block";
 
-  if (typeof playSound === "function" && typeof startSound !== "undefined") {
-    playSound(startSound);
-  }
-  if (typeof resetBoard === "function") {
-    resetBoard();
-  }
+  if (typeof playSound === "function" && typeof startSound !== "undefined") playSound(startSound);
+  if (typeof resetBoard === "function") resetBoard();
   if (typeof renderRewardsUI === "function") renderRewardsUI();
 }
 
@@ -178,7 +182,6 @@ function showQuiz() {
     input.type = "radio";
     input.name = "quizOption";
     input.value = String(idx);
-
     label.appendChild(input);
     label.appendChild(document.createTextNode(option));
     quizOptionsEl.appendChild(label);
@@ -213,19 +216,11 @@ function handleQuizSubmit() {
 
     updateGameUnlocks();
 
-    if (typeof addCoins === "function") {
-      addCoins(10);
-    }
-
+    if (typeof addCoins === "function") addCoins(10);
     if (typeof markRewardMilestone === "function" && typeof unlockSticker === "function") {
-      if (markRewardMilestone("firstQuiz")) {
-        unlockSticker("firstQuiz");
-      }
-      if (markRewardMilestone("firstStory")) {
-        unlockSticker("storyHero");
-      }
+      if (markRewardMilestone("firstQuiz")) unlockSticker("firstQuiz");
+      if (markRewardMilestone("firstStory")) unlockSticker("storyHero");
     }
-
     if (typeof renderRewardsUI === "function") renderRewardsUI();
   } else {
     quizFeedbackEl.textContent = "Not quite. Try again or reread the story.";

@@ -1,13 +1,13 @@
 // rewards.js
-// Stores coins, stickers, and pets in localStorage.
+// Coins, stickers, and pets stored in localStorage.
 
 const REWARDS_STORAGE_KEY = "reading_chess_rewards";
 
 const PETS_CATALOG = [
-  { id: "cat", name: "Cat", emoji: "🐱", cost: 0 },
-  { id: "owl", name: "Owl", emoji: "🦉", cost: 25 },
-  { id: "dog", name: "Dog", emoji: "🐶", cost: 30 },
-  { id: "dragon", name: "Dragon", emoji: "🐉", cost: 50 }
+  { id: "cat", name: "Cat", emoji: "🐱", cost: 0, premium: false },
+  { id: "owl", name: "Owl", emoji: "🦉", cost: 25, premium: true },
+  { id: "dog", name: "Dog", emoji: "🐶", cost: 30, premium: true },
+  { id: "dragon", name: "Dragon", emoji: "🐉", cost: 50, premium: true }
 ];
 
 const STICKER_CATALOG = {
@@ -42,7 +42,6 @@ function saveRewards(state) {
 
 function loadRewards() {
   const raw = localStorage.getItem(REWARDS_STORAGE_KEY);
-
   if (!raw) {
     const initial = getDefaultRewards();
     saveRewards(initial);
@@ -83,20 +82,13 @@ function spendCoins(amount) {
   return true;
 }
 
-function hasSticker(stickerId) {
-  return loadRewards().stickers.includes(stickerId);
-}
-
 function unlockSticker(stickerId) {
   const state = loadRewards();
   if (!state.stickers.includes(stickerId)) {
     state.stickers.push(stickerId);
     saveRewards(state);
-
     const sticker = STICKER_CATALOG[stickerId];
-    if (sticker) {
-      showRewardPopup(`Sticker unlocked: ${sticker.emoji} ${sticker.name}`);
-    }
+    if (sticker) showRewardPopup(`Sticker unlocked: ${sticker.emoji} ${sticker.name}`);
     renderRewardsUI();
   }
 }
@@ -109,14 +101,10 @@ function unlockPet(petId) {
   const state = loadRewards();
   if (!state.petsOwned.includes(petId)) {
     state.petsOwned.push(petId);
-    if (!state.activePet) {
-      state.activePet = petId;
-    }
+    if (!state.activePet) state.activePet = petId;
     saveRewards(state);
     const pet = PETS_CATALOG.find(p => p.id === petId);
-    if (pet) {
-      showRewardPopup(`Pet unlocked: ${pet.emoji} ${pet.name}`);
-    }
+    if (pet) showRewardPopup(`Pet unlocked: ${pet.emoji} ${pet.name}`);
     renderRewardsUI();
   }
 }
@@ -124,6 +112,10 @@ function unlockPet(petId) {
 function buyPet(petId) {
   const pet = PETS_CATALOG.find(p => p.id === petId);
   if (!pet) return false;
+  if (pet.premium && typeof canUsePremiumPet === "function" && !canUsePremiumPet(petId)) {
+    showRewardPopup("Premium plan needed for this pet");
+    return false;
+  }
   if (ownsPet(petId)) {
     setActivePet(petId);
     return true;
@@ -153,20 +145,13 @@ function markRewardMilestone(key) {
   return true;
 }
 
-function getActivePet() {
-  const state = loadRewards();
-  return PETS_CATALOG.find(p => p.id === state.activePet) || null;
-}
-
 function showRewardPopup(message) {
   const container = document.getElementById("rewardPopupContainer");
   if (!container) return;
-
   const popup = document.createElement("div");
   popup.className = "reward-popup";
   popup.textContent = message;
   container.appendChild(popup);
-
   setTimeout(() => {
     popup.classList.add("hide");
     setTimeout(() => popup.remove(), 300);
@@ -175,7 +160,6 @@ function showRewardPopup(message) {
 
 function renderRewardsUI() {
   const state = loadRewards();
-
   const coinsCount = document.getElementById("coinsCount");
   const stickersCount = document.getElementById("stickersCount");
   const stickersGrid = document.getElementById("stickersGrid");
@@ -188,12 +172,9 @@ function renderRewardsUI() {
   if (stickersCount) stickersCount.textContent = String(state.stickers.length);
 
   const activePet = PETS_CATALOG.find(p => p.id === state.activePet) || null;
-
   if (activePetLabel) activePetLabel.textContent = activePet ? activePet.name : "None";
   if (activePetPreview) activePetPreview.textContent = activePet ? activePet.emoji : "🐾";
-  if (whitePetDisplay) {
-    whitePetDisplay.textContent = activePet ? `${activePet.emoji} ${activePet.name}` : "None";
-  }
+  if (whitePetDisplay) whitePetDisplay.textContent = activePet ? `${activePet.emoji} ${activePet.name}` : "None";
 
   if (stickersGrid) {
     stickersGrid.innerHTML = "";
@@ -213,9 +194,10 @@ function renderRewardsUI() {
     PETS_CATALOG.forEach(pet => {
       const owned = state.petsOwned.includes(pet.id);
       const active = state.activePet === pet.id;
+      const premiumLocked = pet.premium && typeof canUsePremiumPet === "function" && !canUsePremiumPet(pet.id);
 
       const card = document.createElement("div");
-      card.className = "pet-card";
+      card.className = "pet-card" + (premiumLocked ? " pet-locked" : "");
 
       const name = document.createElement("div");
       name.className = "pet-name";
@@ -223,18 +205,24 @@ function renderRewardsUI() {
 
       const price = document.createElement("div");
       price.className = "pet-price";
-      price.textContent = owned ? (active ? "Active" : "Owned") : `${pet.cost} coins`;
+      if (premiumLocked) {
+        price.textContent = "Premium plan required";
+      } else {
+        price.textContent = owned ? (active ? "Active" : "Owned") : `${pet.cost} coins`;
+      }
 
       const btn = document.createElement("button");
-      btn.textContent = owned ? (active ? "Using" : "Use Pet") : "Buy Pet";
-      btn.disabled = active;
-      btn.addEventListener("click", () => {
-        if (owned) {
-          setActivePet(pet.id);
-        } else {
-          buyPet(pet.id);
-        }
-      });
+      if (premiumLocked) {
+        btn.textContent = "Premium Only";
+        btn.disabled = true;
+      } else {
+        btn.textContent = owned ? (active ? "Using" : "Use Pet") : "Buy Pet";
+        btn.disabled = active;
+        btn.addEventListener("click", () => {
+          if (owned) setActivePet(pet.id);
+          else buyPet(pet.id);
+        });
+      }
 
       card.appendChild(name);
       card.appendChild(price);
